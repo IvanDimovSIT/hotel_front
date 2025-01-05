@@ -1,14 +1,15 @@
 use app::HotelApp;
-use iced::Theme;
+use styles::MAIN_THEME;
 
 mod app;
+mod constants;
 mod screens;
 mod services;
+mod styles;
 
 fn main() -> iced::Result {
     iced::application(HotelApp::title, HotelApp::update, HotelApp::view)
         .window_size((800.0, 600.0))
-        .theme(|_| Theme::CatppuccinMacchiato)
+        .theme(|_| MAIN_THEME)
         .run_with(HotelApp::new)
 }
-

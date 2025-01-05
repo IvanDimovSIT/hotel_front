@@ -1,6 +1,11 @@
-use iced::{widget::{column, text}, Task};
+use std::sync::{Arc, Mutex};
 
-use crate::app::Screen;
+use iced::{
+    widget::{column, text},
+    Task,
+};
+
+use crate::app::{GlobalState, Screen};
 
 pub struct HomeScreen;
 impl HomeScreen {
@@ -8,14 +13,16 @@ impl HomeScreen {
         Self
     }
 }
-impl Screen for HomeScreen{
-    fn update(&mut self, message: crate::app::AppMessage, global_state: &mut crate::app::GlobalState) -> iced::Task<crate::app::AppMessage> {
+impl Screen for HomeScreen {
+    fn update(
+        &mut self,
+        message: crate::app::AppMessage,
+        global_state: Arc<Mutex<GlobalState>>,
+    ) -> iced::Task<crate::app::AppMessage> {
         Task::none()
     }
 
-    fn view(&self, global_state: &crate::app::GlobalState) -> iced::Element<crate::app::AppMessage> {
-        text!("Hello")
-            .into()
+    fn view(&self, global_state: Arc<Mutex<GlobalState>>) -> iced::Element<crate::app::AppMessage> {
+        text!("Hello").into()
     }
 }
-    
