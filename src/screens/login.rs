@@ -3,15 +3,17 @@ use std::sync::{Arc, Mutex};
 use iced::{
     widget::{button, column, text, text_input},
     Alignment::Center,
-    Color,
+    Color, Element,
     Length::Fill,
     Task,
 };
 
 use crate::{
     app::{AppMessage, GlobalState, Screen, ScreenType},
+    components::text_box::text_box::TextBox,
+    security::JwtToken,
     services,
-    styles::TEXT_BOX_WIDTH,
+    styles::{ERROR_COLOR, TEXT_BOX_WIDTH},
 };
 
 #[derive(Debug, Clone)]
@@ -22,15 +24,15 @@ pub enum LoginMessage {
 }
 
 pub struct LoginScreen {
-    email: String,
-    password: String,
+    email: TextBox,
+    password: TextBox,
     error: Arc<Mutex<String>>,
 }
 impl LoginScreen {
     pub fn new() -> Self {
         Self {
-            email: "".to_owned(),
-            password: "".to_owned(),
+            email: TextBox::new("".to_owned(), 40),
+            password: TextBox::new("".to_owned(), 24),
             error: Arc::new(Mutex::new("".to_owned())),
         }
     }
@@ -38,34 +40,36 @@ impl LoginScreen {
 impl Screen for LoginScreen {
     fn update(
         &mut self,
-        message: crate::app::AppMessage,
+        message: AppMessage,
         global_state: Arc<Mutex<GlobalState>>,
-    ) -> iced::Task<crate::app::AppMessage> {
+    ) -> Task<AppMessage> {
         match message {
             AppMessage::LoginMessage(login_message) => match login_message {
                 LoginMessage::ChangeEmail(email) => {
-                    self.email = email;
+                    self.email.update(email);
                     Task::none()
                 }
                 LoginMessage::ChangePassword(password) => {
-                    self.password = password;
+                    self.password.update(password);
                     Task::none()
                 }
                 LoginMessage::Login => {
                     println!(
                         "Logging in with email:'{}' and password '{}'",
-                        self.email, self.password
+                        self.email.get_text(),
+                        self.password.get_text()
                     );
                     let error = self.error.clone();
                     let global_state_copy = global_state.clone();
-                    let email = self.email.clone();
-                    let password = self.password.clone();
+                    let email = self.email.get_text().to_owned();
+                    let password = self.password.get_text().to_owned();
                     Task::perform(
                         async { services::login::login(email, password).await },
                         move |res| match res {
                             Ok(token) => {
                                 println!("Set token: '{token}'");
-                                global_state_copy.lock().unwrap().token = Some(token);
+                                global_state_copy.lock().unwrap().token = JwtToken::new(token);
+                                println!("Claims: {:?}", global_state_copy.lock().unwrap().token);
                                 AppMessage::NavigateTo(ScreenType::Home)
                             }
                             Err(err) => {
@@ -81,31 +85,26 @@ impl Screen for LoginScreen {
         }
     }
 
-    fn view(&self, global_state: Arc<Mutex<GlobalState>>) -> iced::Element<crate::app::AppMessage> {
+    fn view(&self, global_state: Arc<Mutex<GlobalState>>) -> Element<crate::app::AppMessage> {
         column![
             text!("Login")
                 .height(40)
                 .size(30)
                 .align_x(Center)
                 .width(Fill),
-            text_input("Email", &self.email)
+            text_input("Email", self.email.get_text())
                 .on_input(|x| AppMessage::LoginMessage(LoginMessage::ChangeEmail(x)))
                 .align_x(Center)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
-            text_input("Password", &self.password)
+            text_input("Password", self.password.get_text())
                 .on_input(|x| AppMessage::LoginMessage(LoginMessage::ChangePassword(x)))
                 .align_x(Center)
                 .secure(true)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
             text!("{}", self.error.lock().unwrap())
-                .color(Color {
-                    r: 1.0,
-                    g: 0.0,
-                    b: 0.0,
-                    a: 1.0
-                })
+                .color(ERROR_COLOR)
                 .size(18)
                 .align_x(Center)
                 .width(Fill),

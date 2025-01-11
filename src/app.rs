@@ -4,12 +4,15 @@ use iced::widget::{button, column, row};
 use iced::window;
 use iced::{Center, Element, Fill, Font, Subscription, Task};
 
+use crate::screens::add_room::{AddRoomMessage, AddRoomScreen};
 use crate::screens::home::HomeScreen;
 use crate::screens::login::{LoginMessage, LoginScreen};
+use crate::security::{JwtToken, Role};
+use crate::styles::NAVIGATION_BUTTON_WIDTH;
 
 #[derive(Debug, Default)]
 pub struct GlobalState {
-    pub token: Option<String>,
+    pub token: Option<JwtToken>,
 }
 
 pub trait Screen {
@@ -26,18 +29,21 @@ pub enum AppMessage {
     None,
     NavigateTo(ScreenType),
     LoginMessage(LoginMessage),
+    AddRoomMessage(AddRoomMessage),
 }
 
 #[derive(Debug, Clone)]
 pub enum ScreenType {
     Home,
     Login,
+    AddRoom,
 }
 impl ScreenType {
     fn create_screen(&self) -> Box<dyn Screen> {
         match self {
             ScreenType::Home => Box::new(HomeScreen::new()),
             ScreenType::Login => Box::new(LoginScreen::new()),
+            ScreenType::AddRoom => Box::new(AddRoomScreen::new()),
         }
     }
 }
@@ -86,15 +92,39 @@ impl HotelApp {
     pub fn view(&self) -> Element<AppMessage> {
         match self.screen_type {
             ScreenType::Login => self.current_screen.view(self.global_state.clone()),
-            _ => row![
-                column![
-                    button("Placeholder1"),
-                    button("Placeholder2"),
-                    button("Placeholder3"),
-                ],
-                self.current_screen.view(self.global_state.clone())
-            ]
-            .into(),
+            _ => match &self.global_state.lock().unwrap().token {
+                Some(some) => match some.role {
+                    Role::User => self.view_user(),
+                    Role::Admin => self.view_admin(),
+                },
+                None => self.view_user(),
+            },
         }
+    }
+
+    fn view_admin(&self) -> Element<AppMessage> {
+        row![
+            column![
+                button("Add Room")
+                    .on_press(AppMessage::NavigateTo(ScreenType::AddRoom))
+                    .width(NAVIGATION_BUTTON_WIDTH),
+                button("Placeholder2").width(NAVIGATION_BUTTON_WIDTH),
+                button("Placeholder3").width(NAVIGATION_BUTTON_WIDTH),
+            ],
+            self.current_screen.view(self.global_state.clone())
+        ]
+        .into()
+    }
+
+    fn view_user(&self) -> Element<AppMessage> {
+        row![
+            column![
+                button("Placeholder1").width(NAVIGATION_BUTTON_WIDTH),
+                button("Placeholder2").width(NAVIGATION_BUTTON_WIDTH),
+                button("Placeholder3").width(NAVIGATION_BUTTON_WIDTH),
+            ],
+            self.current_screen.view(self.global_state.clone())
+        ]
+        .into()
     }
 }
