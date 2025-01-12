@@ -3,9 +3,12 @@ pub struct TextBox {
     max_length: usize,
 }
 impl TextBox {
-    pub fn new(initial_text: String, max_length: usize) -> Self {
+    pub fn new<T>(initial_text: T, max_length: usize) -> Self
+    where
+        T: Into<String>,
+    {
         Self {
-            text: initial_text,
+            text: initial_text.into(),
             max_length,
         }
     }
@@ -14,10 +17,14 @@ impl TextBox {
         &self.text
     }
 
-    pub fn update(&mut self, new_text: String) {
-        if new_text.len() > self.max_length {
+    pub fn update<T>(&mut self, new_text: T)
+    where
+        T: Into<String>,
+    {
+        let text = new_text.into();
+        if text.len() > self.max_length {
             return;
         }
-        self.text = new_text;
+        self.text = text;
     }
 }

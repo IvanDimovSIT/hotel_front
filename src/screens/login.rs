@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use iced::{
     widget::{button, column, text, text_input},
     Alignment::Center,
-    Color, Element,
+    Element,
     Length::Fill,
     Task,
 };
@@ -11,7 +11,6 @@ use iced::{
 use crate::{
     app::{AppMessage, GlobalState, Screen, ScreenType},
     components::text_box::text_box::TextBox,
-    security::JwtToken,
     services,
     styles::{ERROR_COLOR, TEXT_BOX_WIDTH},
 };
@@ -31,8 +30,8 @@ pub struct LoginScreen {
 impl LoginScreen {
     pub fn new() -> Self {
         Self {
-            email: TextBox::new("".to_owned(), 40),
-            password: TextBox::new("".to_owned(), 24),
+            email: TextBox::new("", 40),
+            password: TextBox::new("", 24),
             error: Arc::new(Mutex::new("".to_owned())),
         }
     }
@@ -60,21 +59,21 @@ impl Screen for LoginScreen {
                         self.password.get_text()
                     );
                     let error = self.error.clone();
+                    let global_state_input = global_state.clone();
                     let global_state_copy = global_state.clone();
                     let email = self.email.get_text().to_owned();
                     let password = self.password.get_text().to_owned();
                     Task::perform(
-                        async { services::login::login(email, password).await },
+                        async { services::login::login(global_state_input, email, password).await },
                         move |res| match res {
                             Ok(token) => {
-                                println!("Set token: '{token}'");
-                                global_state_copy.lock().unwrap().token = JwtToken::new(token);
-                                println!("Claims: {:?}", global_state_copy.lock().unwrap().token);
+                                println!("Set token: '{token:?}'");
+                                global_state_copy.lock().unwrap().token = Some(token);
                                 AppMessage::NavigateTo(ScreenType::Home)
                             }
                             Err(err) => {
                                 println!("Error: {err}");
-                                *error.lock().unwrap() = "Invalid username or password".to_owned();
+                                *error.lock().unwrap() = err;
                                 AppMessage::None
                             }
                         },
@@ -85,7 +84,7 @@ impl Screen for LoginScreen {
         }
     }
 
-    fn view(&self, global_state: Arc<Mutex<GlobalState>>) -> Element<crate::app::AppMessage> {
+    fn view(&self, _global_state: Arc<Mutex<GlobalState>>) -> Element<crate::app::AppMessage> {
         column![
             text!("Login")
                 .height(40)

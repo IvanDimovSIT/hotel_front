@@ -1,11 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use iced::{
-    widget::{column, text},
-    Element,
-    Length::Fill,
-    Task,
-};
+use iced::{widget::text, Alignment::Center, Element, Length::Fill, Task};
 
 use crate::{
     app::{AppMessage, GlobalState, Screen},
@@ -27,7 +22,11 @@ impl Screen for HomeScreen {
         Task::none()
     }
 
-    fn view(&self, global_state: Arc<Mutex<GlobalState>>) -> Element<AppMessage> {
-        text!("Hello").size(TITLE_FONT_SIZE).width(Fill).into()
+    fn view(&self, _global_state: Arc<Mutex<GlobalState>>) -> Element<AppMessage> {
+        text!("Hotel App")
+            .size(TITLE_FONT_SIZE)
+            .width(Fill)
+            .align_x(Center)
+            .into()
     }
 }

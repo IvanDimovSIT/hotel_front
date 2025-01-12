@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use iced::{
-    widget::{button, column, text, text_input},
+    widget::{button, column, pick_list, text, text_input},
     Alignment::Center,
     Element,
     Length::Fill,
@@ -10,10 +10,12 @@ use iced::{
 
 use crate::{
     app::{AppMessage, GlobalState, Screen},
-    components::text_box::{
-        number_text_box::{NumberTextBox, NumberType},
-        room_number_text_box::RoomNumberTextBox,
-        text_box::TextBox,
+    components::{
+        combo_box::bathroom_type_combo_box::{BathroomType, BathroomTypeComboBox},
+        text_box::{
+            number_text_box::{NumberTextBox, NumberType},
+            room_number_text_box::RoomNumberTextBox,
+        },
     },
     styles::{ERROR_COLOR, TEXT_BOX_WIDTH, TITLE_FONT_SIZE},
 };
@@ -23,20 +25,23 @@ pub enum AddRoomMessage {
     ChangeRoomNumber(String),
     ChangeFloor(String),
     ChagePrice(String),
+    ChangeBathroomType(BathroomType),
 }
 
 pub struct AddRoomScreen {
     price: NumberTextBox,
     floor: NumberTextBox,
     room_number: RoomNumberTextBox,
+    bathroom_type_combo_box: BathroomTypeComboBox,
     error: Arc<Mutex<String>>,
 }
 impl AddRoomScreen {
     pub fn new() -> Self {
         Self {
-            price: NumberTextBox::new("".to_owned(), 9, NumberType::Price),
-            floor: NumberTextBox::new("".to_owned(), 6, NumberType::PositiveInteger),
-            room_number: RoomNumberTextBox::new("".to_owned()),
+            price: NumberTextBox::new("", 9, NumberType::Price),
+            floor: NumberTextBox::new("", 6, NumberType::PositiveInteger),
+            room_number: RoomNumberTextBox::new(""),
+            bathroom_type_combo_box: BathroomTypeComboBox::new(),
             error: Arc::new(Mutex::new("".to_owned())),
         }
     }
@@ -61,12 +66,16 @@ impl Screen for AddRoomScreen {
                     self.price.update(price);
                     Task::none()
                 }
+                AddRoomMessage::ChangeBathroomType(bathroom_type) => {
+                    self.bathroom_type_combo_box.update(bathroom_type);
+                    Task::none()
+                }
             },
             _ => Task::none(),
         }
     }
 
-    fn view(&self, global_state: Arc<Mutex<GlobalState>>) -> Element<AppMessage> {
+    fn view(&self, _global_state: Arc<Mutex<GlobalState>>) -> Element<AppMessage> {
         column![
             text!("Add Room")
                 .align_x(Center)
@@ -87,6 +96,10 @@ impl Screen for AddRoomScreen {
                 .align_x(Center)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
+            text!("Bathroom type:"),
+            self.bathroom_type_combo_box
+                .view(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChangeBathroomType(x)))
+                .width(TEXT_BOX_WIDTH),
             text!("{}", self.error.lock().unwrap())
                 .color(ERROR_COLOR)
                 .size(18)

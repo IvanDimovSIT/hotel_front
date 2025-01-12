@@ -11,7 +11,10 @@ pub struct NumberTextBox {
     text_box: RegexTextBox,
 }
 impl NumberTextBox {
-    pub fn new(initial_text: String, max_length: usize, number_type: NumberType) -> Self {
+    pub fn new<T>(initial_text: T, max_length: usize, number_type: NumberType) -> Self
+    where
+        T: Into<String>,
+    {
         let regex = match number_type {
             NumberType::PositiveInteger => {
                 Regex::new("^\\d*$").expect("Error creating PositiveInteger regex")
@@ -29,7 +32,10 @@ impl NumberTextBox {
         &self.text_box.get_text()
     }
 
-    pub fn update(&mut self, new_text: String) {
+    pub fn update<T>(&mut self, new_text: T)
+    where
+        T: Into<String>,
+    {
         self.text_box.update(new_text);
     }
 }

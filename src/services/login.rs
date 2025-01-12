@@ -1,9 +1,17 @@
-use std::error::Error;
+use std::{
+    error::Error,
+    sync::{Arc, Mutex},
+};
 
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 
-use crate::constants::{BASE_URL, LOGIN_PATH};
+use crate::{
+    app::GlobalState,
+    components::validator::Validator,
+    constants::{BASE_URL, LOGIN_PATH},
+    security::JwtToken,
+};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,7 +26,7 @@ struct LoginOutput {
     token: String,
 }
 
-pub async fn login(
+async fn login_request(
     email: String,
     password: String,
 ) -> Result<String, Box<dyn Error + Send + Sync>> {
@@ -40,5 +48,34 @@ pub async fn login(
     } else {
         let error_message = result.text().await?;
         Err(format!("Failed to login: {}", error_message).into())
+    }
+}
+
+pub async fn login(
+    global_state: Arc<Mutex<GlobalState>>,
+    email: String,
+    password: String,
+) -> Result<JwtToken, String> {
+    {
+        let lock = &global_state.lock().unwrap();
+        lock.validator.validate_email(&email)?;
+        lock.validator.validate_password(&password)?;
+    }
+
+    let login_result = login_request(email, password).await;
+    match login_result {
+        Ok(ok) => {
+            let token = JwtToken::new(ok);
+            if let Some(some_token) = token {
+                Ok(some_token)
+            } else {
+                println!("Error creating token object");
+                Err("Unexpected error".to_owned())
+            }
+        }
+        Err(err) => {
+            println!("{err}");
+            Err("Incorrect credentials".to_owned())
+        }
     }
 }

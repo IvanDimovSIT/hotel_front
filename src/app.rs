@@ -1,9 +1,9 @@
 use std::sync::{Arc, Mutex};
 
 use iced::widget::{button, column, row};
-use iced::window;
-use iced::{Center, Element, Fill, Font, Subscription, Task};
+use iced::{Element, Task};
 
+use crate::components::validator::Validator;
 use crate::screens::add_room::{AddRoomMessage, AddRoomScreen};
 use crate::screens::home::HomeScreen;
 use crate::screens::login::{LoginMessage, LoginScreen};
@@ -13,6 +13,7 @@ use crate::styles::NAVIGATION_BUTTON_WIDTH;
 #[derive(Debug, Default)]
 pub struct GlobalState {
     pub token: Option<JwtToken>,
+    pub validator: Validator,
 }
 
 pub trait Screen {

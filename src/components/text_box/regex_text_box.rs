@@ -6,9 +6,12 @@ pub struct RegexTextBox {
     regex: Regex,
 }
 impl RegexTextBox {
-    pub fn new(initial_text: String, max_length: usize, regex: Regex) -> Self {
+    pub fn new<T>(initial_text: T, max_length: usize, regex: Regex) -> Self
+    where
+        T: Into<String>,
+    {
         Self {
-            text: initial_text,
+            text: initial_text.into(),
             max_length,
             regex,
         }
@@ -18,12 +21,16 @@ impl RegexTextBox {
         &self.text
     }
 
-    pub fn update(&mut self, new_text: String) {
-        if new_text.len() > self.max_length {
+    pub fn update<T>(&mut self, new_text: T)
+    where
+        T: Into<String>,
+    {
+        let text = new_text.into();
+        if text.len() > self.max_length {
             return;
         }
-        if self.regex.is_match(&new_text) {
-            self.text = new_text;
+        if self.regex.is_match(&text) {
+            self.text = text;
         }
     }
 }
