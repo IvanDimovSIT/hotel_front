@@ -1,6 +1,7 @@
 use iced::widget::{pick_list, PickList};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BathroomType {
     Private,
     Shared,
@@ -8,9 +9,10 @@ pub enum BathroomType {
 impl ToString for BathroomType {
     fn to_string(&self) -> String {
         match self {
-            BathroomType::Private => "Private".to_owned(),
-            BathroomType::Shared => "Shared".to_owned(),
+            BathroomType::Private => "Private",
+            BathroomType::Shared => "Shared",
         }
+        .to_owned()
     }
 }
 
@@ -40,5 +42,9 @@ impl BathroomTypeComboBox {
         F: Fn(BathroomType) -> Message + 'a + 'b,
     {
         pick_list(&self.options, Some(self.selected), on_selected)
+    }
+
+    pub fn get_selected(&self) -> BathroomType {
+        self.selected
     }
 }

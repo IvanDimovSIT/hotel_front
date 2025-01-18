@@ -8,6 +8,7 @@ mod screens;
 mod security;
 mod services;
 mod styles;
+mod utils;
 
 fn main() -> iced::Result {
     iced::application(HotelApp::title, HotelApp::update, HotelApp::view)
