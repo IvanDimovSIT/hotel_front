@@ -1,14 +1,17 @@
 use std::sync::{Arc, Mutex};
 
 use iced::widget::{button, column, row};
+use iced::Length::Fill;
 use iced::{Element, Task};
 
+use crate::components::notification::{self, Notification, NotificationMessage, NotificationType};
 use crate::components::validator::Validator;
 use crate::screens::add_room::{AddRoomMessage, AddRoomScreen};
 use crate::screens::home::HomeScreen;
 use crate::screens::login::{LoginMessage, LoginScreen};
 use crate::security::{JwtToken, Role};
 use crate::styles::NAVIGATION_BUTTON_WIDTH;
+use crate::utils::show_notification;
 
 #[derive(Debug, Default)]
 pub struct GlobalState {
@@ -28,6 +31,8 @@ pub trait Screen {
 #[derive(Debug, Clone)]
 pub enum AppMessage {
     None,
+    TokenExpired,
+    NotificationMessage(NotificationMessage),
     NavigateTo(ScreenType),
     LoginMessage(LoginMessage),
     AddRoomMessage(AddRoomMessage),
@@ -52,6 +57,7 @@ impl ScreenType {
 pub struct HotelApp {
     current_screen: Box<dyn Screen>,
     screen_type: ScreenType,
+    notification: Notification,
     global_state: Arc<Mutex<GlobalState>>,
 }
 impl HotelApp {
@@ -65,12 +71,14 @@ impl HotelApp {
         let global_state = Arc::new(Mutex::new(GlobalState::default()));
         let screen_type = ScreenType::Login;
         let current_screen = screen_type.create_screen();
+        let notification = Notification::new();
 
         (
             Self {
                 current_screen,
                 screen_type,
                 global_state,
+                notification,
             },
             Task::none(),
         )
@@ -83,7 +91,15 @@ impl HotelApp {
     pub fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
             AppMessage::NavigateTo(screen_type) => self.navigate_to(&screen_type),
+            AppMessage::TokenExpired => Task::done(show_notification(
+                "Login session expired",
+                NotificationType::Error,
+            ))
+            .chain(Task::done(AppMessage::NavigateTo(ScreenType::Login))),
             AppMessage::None => Task::none(),
+            AppMessage::NotificationMessage(notification_message) => {
+                self.notification.update(notification_message)
+            }
             _ => self
                 .current_screen
                 .update(message, self.global_state.clone()),
@@ -91,7 +107,7 @@ impl HotelApp {
     }
 
     pub fn view(&self) -> Element<AppMessage> {
-        match self.screen_type {
+        column![match self.screen_type {
             ScreenType::Login => self.current_screen.view(self.global_state.clone()),
             _ => match &self.global_state.lock().unwrap().token {
                 Some(some) => match some.role {
@@ -100,7 +116,9 @@ impl HotelApp {
                 },
                 None => self.view_user(),
             },
-        }
+        }]
+        .push_maybe(self.notification.view())
+        .into()
     }
 
     fn view_admin(&self) -> Element<AppMessage> {
@@ -114,6 +132,7 @@ impl HotelApp {
             ],
             self.current_screen.view(self.global_state.clone())
         ]
+        .height(Fill)
         .into()
     }
 
@@ -126,6 +145,7 @@ impl HotelApp {
             ],
             self.current_screen.view(self.global_state.clone())
         ]
+        .height(Fill)
         .into()
     }
 }

@@ -1,6 +1,11 @@
 use reqwest::{Response, StatusCode};
 use serde::Deserialize;
 
+use crate::{
+    app::AppMessage,
+    components::notification::{NotificationMessage, NotificationType},
+};
+
 pub async fn decode_error_response(response: Response) -> String {
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
@@ -20,4 +25,14 @@ pub async fn decode_error_response(response: Response) -> String {
             }
         }
     }
+}
+
+pub fn show_notification<T>(message: T, notification_type: NotificationType) -> AppMessage
+where
+    T: Into<String>,
+{
+    AppMessage::NotificationMessage(NotificationMessage::ShowNotification {
+        message: message.into(),
+        notification_type,
+    })
 }

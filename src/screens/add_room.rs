@@ -18,6 +18,7 @@ use crate::{
         combo_box::{
             bathroom_type_combo_box::BathroomTypeComboBox, bed_size_combo_box::BedSizeComboBox,
         },
+        notification::NotificationType,
         text_box::{
             number_text_box::{NumberTextBox, NumberType},
             room_number_text_box::RoomNumberTextBox,
@@ -31,7 +32,8 @@ use crate::{
         self,
         add_room::{AddRoomInput, AddRoomResult},
     },
-    styles::{ERROR_COLOR, TEXT_BOX_WIDTH, TITLE_FONT_SIZE},
+    styles::{ERROR_COLOR, FORM_SPACING, TEXT_BOX_WIDTH, TITLE_FONT_SIZE},
+    utils::show_notification,
 };
 
 #[derive(Debug, Clone)]
@@ -204,10 +206,7 @@ impl Screen for AddRoomScreen {
                                     Ok(AddRoomResult::Added(uuid)) => {
                                         AppMessage::AddRoomMessage(AddRoomMessage::RoomAdded(uuid))
                                     }
-                                    Ok(AddRoomResult::Forbidden) => {
-                                        //TODO: Show Notification message
-                                        AppMessage::NavigateTo(ScreenType::Login)
-                                    }
+                                    Ok(AddRoomResult::Forbidden) => AppMessage::TokenExpired,
                                     Ok(AddRoomResult::BadRequest(bad_request)) => {
                                         AppMessage::AddRoomMessage(AddRoomMessage::ShowError(
                                             bad_request,
@@ -225,9 +224,8 @@ impl Screen for AddRoomScreen {
                     }
                 }
                 AddRoomMessage::RoomAdded(_uuid) => {
-                    //TODO: Show notification
                     self.clear_inputs();
-                    Task::none()
+                    Task::done(show_notification("Room added", NotificationType::Success))
                 }
                 AddRoomMessage::ShowError(err) => {
                     self.error = err;
@@ -274,7 +272,7 @@ impl Screen for AddRoomScreen {
                 .height(30)
                 .width(80)
         ]
-        .spacing(20)
+        .spacing(FORM_SPACING)
         .align_x(Center)
         .into()
     }
@@ -289,7 +287,7 @@ impl BedCountInput {
     fn new(id: u64) -> Self {
         Self {
             id,
-            count: NumberTextBox::new("", 1, NumberType::PositiveInteger),
+            count: NumberTextBox::new("1", 1, NumberType::PositiveInteger),
             bed_size: BedSizeComboBox::new(),
         }
     }
