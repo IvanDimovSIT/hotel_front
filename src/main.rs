@@ -4,6 +4,7 @@ use styles::MAIN_THEME;
 mod app;
 mod components;
 mod constants;
+mod model;
 mod screens;
 mod security;
 mod services;

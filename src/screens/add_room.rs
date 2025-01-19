@@ -4,7 +4,7 @@ use std::{
 };
 
 use iced::{
-    widget::{button, column, pick_list, row, text, text_input},
+    widget::{button, column, row, text, text_input},
     Alignment::Center,
     Element,
     Length::Fill,
@@ -16,17 +16,20 @@ use crate::{
     app::{AppMessage, GlobalState, Screen, ScreenType},
     components::{
         combo_box::{
-            bathroom_type_combo_box::{BathroomType, BathroomTypeComboBox},
-            bed_size_combo_box::{BedSize, BedSizeComboBox},
+            bathroom_type_combo_box::BathroomTypeComboBox, bed_size_combo_box::BedSizeComboBox,
         },
         text_box::{
             number_text_box::{NumberTextBox, NumberType},
             room_number_text_box::RoomNumberTextBox,
         },
     },
+    model::{
+        bathroom_type::BathroomType,
+        bed::{Bed, BedSize},
+    },
     services::{
         self,
-        add_room::{AddRoomInput, AddRoomResult, Bed},
+        add_room::{AddRoomInput, AddRoomResult},
     },
     styles::{ERROR_COLOR, TEXT_BOX_WIDTH, TITLE_FONT_SIZE},
 };

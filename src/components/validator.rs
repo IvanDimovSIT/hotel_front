@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::services::add_room::Bed;
+use crate::model::bed::Bed;
 
 const MIN_FLOOR: i16 = 1;
 const MAX_FLOOR: i16 = 100;

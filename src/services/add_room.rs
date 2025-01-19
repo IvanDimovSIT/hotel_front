@@ -1,5 +1,4 @@
 use std::{
-    collections::HashSet,
     error::Error,
     sync::{Arc, Mutex},
 };
@@ -11,21 +10,11 @@ use uuid::Uuid;
 
 use crate::{
     app::GlobalState,
-    components::{
-        combo_box::{bathroom_type_combo_box::BathroomType, bed_size_combo_box::BedSize},
-        validator::Validator,
-    },
+    components::validator::Validator,
     constants::{ADD_ROOM_PATH, BASE_URL},
-    security::JwtToken,
+    model::{bathroom_type::BathroomType, bed::Bed},
     utils::decode_error_response,
 };
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Bed {
-    pub bed_size: BedSize,
-    pub count: i16,
-}
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

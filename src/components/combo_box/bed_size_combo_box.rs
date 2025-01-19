@@ -1,24 +1,7 @@
 use iced::widget::{pick_list, PickList};
-use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
-pub enum BedSize {
-    Single,
-    SmallDouble,
-    Double,
-    KingSize,
-}
-impl ToString for BedSize {
-    fn to_string(&self) -> String {
-        match self {
-            BedSize::Single => "Single",
-            BedSize::SmallDouble => "Small double",
-            BedSize::Double => "Double",
-            BedSize::KingSize => "King size",
-        }
-        .to_owned()
-    }
-}
+use crate::model::bed::BedSize;
+
 pub struct BedSizeComboBox {
     selected: BedSize,
     options: [BedSize; 4],

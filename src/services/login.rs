@@ -8,7 +8,6 @@ use serde_json::to_string;
 
 use crate::{
     app::GlobalState,
-    components::validator::Validator,
     constants::{BASE_URL, LOGIN_PATH},
     security::JwtToken,
 };
