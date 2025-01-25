@@ -4,12 +4,13 @@ use iced::widget::{button, column, row};
 use iced::Length::Fill;
 use iced::{Element, Task};
 
-use crate::components::notification::{self, Notification, NotificationMessage, NotificationType};
+use crate::components::notification::{Notification, NotificationMessage, NotificationType};
 use crate::components::validator::Validator;
 use crate::screens::add_room::{AddRoomMessage, AddRoomScreen};
 use crate::screens::home::HomeScreen;
 use crate::screens::login::{LoginMessage, LoginScreen};
 use crate::security::{JwtToken, Role};
+use crate::services;
 use crate::styles::NAVIGATION_BUTTON_WIDTH;
 use crate::utils::show_notification;
 
@@ -31,6 +32,7 @@ pub trait Screen {
 #[derive(Debug, Clone)]
 pub enum AppMessage {
     None,
+    RefreshToken,
     TokenExpired,
     NotificationMessage(NotificationMessage),
     NavigateTo(ScreenType),
@@ -96,6 +98,7 @@ impl HotelApp {
                 NotificationType::Error,
             ))
             .chain(Task::done(AppMessage::NavigateTo(ScreenType::Login))),
+            AppMessage::RefreshToken => self.refresh_token(),
             AppMessage::None => Task::none(),
             AppMessage::NotificationMessage(notification_message) => {
                 self.notification.update(notification_message)
@@ -147,5 +150,35 @@ impl HotelApp {
         ]
         .height(Fill)
         .into()
+    }
+
+    fn refresh_token(&self) -> Task<AppMessage> {
+        if self.global_state.lock().unwrap().token.is_some() {
+            let global_state_copy = self.global_state.clone();
+            let token_string = global_state_copy
+                .lock()
+                .unwrap()
+                .token
+                .as_ref()
+                .unwrap()
+                .token_string
+                .clone();
+
+            Task::perform(
+                async { services::refresh_token::refresh_token(token_string).await },
+                move |res| {
+                    match res {
+                        Ok(ok) => {
+                            println!("refreshed token: {}", ok.token_string);
+                            global_state_copy.lock().unwrap().token = Some(ok);
+                        }
+                        Err(err) => println!("Error refreshing token: {err}"),
+                    }
+                    AppMessage::None
+                },
+            )
+        } else {
+            Task::none()
+        }
     }
 }

@@ -13,7 +13,7 @@ use iced::{
 use uuid::Uuid;
 
 use crate::{
-    app::{AppMessage, GlobalState, Screen, ScreenType},
+    app::{AppMessage, GlobalState, Screen},
     components::{
         combo_box::{
             bathroom_type_combo_box::BathroomTypeComboBox, bed_size_combo_box::BedSizeComboBox,

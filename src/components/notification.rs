@@ -1,15 +1,14 @@
 use std::time::Duration;
 
 use iced::{
-    futures::task,
     widget::{
         container::{self, Style},
         text, Container,
     },
     Alignment::Center,
-    Background, Border, Color, Element,
+    Background, Color, Element,
     Length::Fill,
-    Renderer, Task, Theme,
+    Task, Theme,
 };
 use tokio::time::sleep;
 
