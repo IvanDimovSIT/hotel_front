@@ -1,4 +1,4 @@
-use reqwest::{Response, StatusCode};
+use reqwest::Response;
 use serde::Deserialize;
 
 use crate::{

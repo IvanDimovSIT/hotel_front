@@ -1,9 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use iced::widget::{button, column, row};
-use iced::Length::Fill;
+use iced::widget::column;
 use iced::{Element, Task};
 
+use crate::components::navigation_bar::{view_admin, view_user};
 use crate::components::notification::{Notification, NotificationMessage, NotificationType};
 use crate::components::validator::Validator;
 use crate::screens::add_room::{AddRoomMessage, AddRoomScreen};
@@ -11,7 +11,6 @@ use crate::screens::home::HomeScreen;
 use crate::screens::login::{LoginMessage, LoginScreen};
 use crate::security::{JwtToken, Role};
 use crate::services;
-use crate::styles::NAVIGATION_BUTTON_WIDTH;
 use crate::utils::show_notification;
 
 #[derive(Debug, Default)]
@@ -114,41 +113,13 @@ impl HotelApp {
             ScreenType::Login => self.current_screen.view(self.global_state.clone()),
             _ => match &self.global_state.lock().unwrap().token {
                 Some(some) => match some.role {
-                    Role::User => self.view_user(),
-                    Role::Admin => self.view_admin(),
+                    Role::User => view_user(self.global_state.clone(), &*self.current_screen),
+                    Role::Admin => view_admin(self.global_state.clone(), &*self.current_screen),
                 },
-                None => self.view_user(),
+                None => view_user(self.global_state.clone(), &*self.current_screen),
             },
         }]
         .push_maybe(self.notification.view())
-        .into()
-    }
-
-    fn view_admin(&self) -> Element<AppMessage> {
-        row![
-            column![
-                button("Add Room")
-                    .on_press(AppMessage::NavigateTo(ScreenType::AddRoom))
-                    .width(NAVIGATION_BUTTON_WIDTH),
-                button("Placeholder2").width(NAVIGATION_BUTTON_WIDTH),
-                button("Placeholder3").width(NAVIGATION_BUTTON_WIDTH),
-            ],
-            self.current_screen.view(self.global_state.clone())
-        ]
-        .height(Fill)
-        .into()
-    }
-
-    fn view_user(&self) -> Element<AppMessage> {
-        row![
-            column![
-                button("Placeholder1").width(NAVIGATION_BUTTON_WIDTH),
-                button("Placeholder2").width(NAVIGATION_BUTTON_WIDTH),
-                button("Placeholder3").width(NAVIGATION_BUTTON_WIDTH),
-            ],
-            self.current_screen.view(self.global_state.clone())
-        ]
-        .height(Fill)
         .into()
     }
 

@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use iced::{
     widget::{
-        container::{self, Style},
+        container::Style,
         text, Container,
     },
     Alignment::Center,
