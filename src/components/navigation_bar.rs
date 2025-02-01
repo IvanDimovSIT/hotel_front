@@ -23,7 +23,9 @@ pub fn view_admin(
                 button("Add Room")
                     .on_press(AppMessage::NavigateTo(ScreenType::AddRoom))
                     .width(NAVIGATION_BUTTON_WIDTH),
-                button("Placeholder2").width(NAVIGATION_BUTTON_WIDTH),
+                button("Add Guest")
+                    .on_press(AppMessage::NavigateTo(ScreenType::AddGuest))
+                    .width(NAVIGATION_BUTTON_WIDTH),
                 button("Placeholder3").width(NAVIGATION_BUTTON_WIDTH),
             ]
             .spacing(BUTTON_SPACING)

@@ -6,6 +6,7 @@ use iced::{Element, Task};
 use crate::components::navigation_bar::{view_admin, view_user};
 use crate::components::notification::{Notification, NotificationMessage, NotificationType};
 use crate::components::validator::Validator;
+use crate::screens::add_guest::{AddGuestMessage, AddGuestScreen};
 use crate::screens::add_room::{AddRoomMessage, AddRoomScreen};
 use crate::screens::home::HomeScreen;
 use crate::screens::login::{LoginMessage, LoginScreen};
@@ -37,6 +38,7 @@ pub enum AppMessage {
     NavigateTo(ScreenType),
     LoginMessage(LoginMessage),
     AddRoomMessage(AddRoomMessage),
+    AddGuestMessage(AddGuestMessage),
 }
 
 #[derive(Debug, Clone)]
@@ -44,6 +46,7 @@ pub enum ScreenType {
     Home,
     Login,
     AddRoom,
+    AddGuest,
 }
 impl ScreenType {
     fn create_screen(&self) -> Box<dyn Screen> {
@@ -51,6 +54,7 @@ impl ScreenType {
             ScreenType::Home => Box::new(HomeScreen::new()),
             ScreenType::Login => Box::new(LoginScreen::new()),
             ScreenType::AddRoom => Box::new(AddRoomScreen::new()),
+            ScreenType::AddGuest => Box::new(AddGuestScreen::new()),
         }
     }
 }

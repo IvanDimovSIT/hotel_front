@@ -1,10 +1,7 @@
 use std::time::Duration;
 
 use iced::{
-    widget::{
-        container::Style,
-        text, Container,
-    },
+    widget::{container::Style, text, Container},
     Alignment::Center,
     Background, Color, Element,
     Length::Fill,
