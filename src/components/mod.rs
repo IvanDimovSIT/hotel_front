@@ -1,3 +1,4 @@
+pub mod checkbox;
 pub mod combo_box;
 pub mod navigation_bar;
 pub mod notification;

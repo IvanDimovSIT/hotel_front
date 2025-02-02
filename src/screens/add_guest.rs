@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use iced::{
-    widget::{button, column, row, text, text_input},
+    widget::{button, column, text, text_input},
     Alignment::Center,
     Element,
     Length::Fill,
@@ -10,7 +10,10 @@ use iced::{
 
 use crate::{
     app::{AppMessage, GlobalState, Screen},
-    components::text_box::text_box::TextBox,
+    components::{
+        checkbox::Checkbox,
+        text_box::{phone_number_text_box::PhoneNumberTextBox, text_box::TextBox},
+    },
     styles::{ERROR_COLOR, FORM_SPACING, TEXT_BOX_WIDTH, TITLE_FONT_SIZE},
 };
 
@@ -18,12 +21,16 @@ use crate::{
 pub enum AddGuestMessage {
     ChangeFirstName(String),
     ChangeLastName(String),
+    ChangeCheckbox(bool),
+    ChangePhoneNumber(String),
 }
 
 pub struct AddGuestScreen {
     error: String,
     first_name_input: TextBox,
     last_name_input: TextBox,
+    has_id_card_checkbox: Checkbox,
+    phone_number_input: PhoneNumberTextBox,
 }
 impl AddGuestScreen {
     pub fn new() -> Self {
@@ -31,6 +38,8 @@ impl AddGuestScreen {
             error: "".to_owned(),
             first_name_input: TextBox::new("", 20),
             last_name_input: TextBox::new("", 20),
+            has_id_card_checkbox: Checkbox::new("Id card", false),
+            phone_number_input: PhoneNumberTextBox::new(""),
         }
     }
 }
@@ -48,6 +57,14 @@ impl Screen for AddGuestScreen {
                 }
                 AddGuestMessage::ChangeLastName(x) => {
                     self.last_name_input.update(x);
+                    Task::none()
+                }
+                AddGuestMessage::ChangeCheckbox(x) => {
+                    self.has_id_card_checkbox.update(x);
+                    Task::none()
+                }
+                AddGuestMessage::ChangePhoneNumber(x) => {
+                    self.phone_number_input.update(x);
                     Task::none()
                 }
             },
@@ -68,6 +85,13 @@ impl Screen for AddGuestScreen {
                 .line_height(1.5),
             text_input("Last Name", self.last_name_input.get_text())
                 .on_input(|x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeLastName(x)))
+                .align_x(Center)
+                .width(TEXT_BOX_WIDTH)
+                .line_height(1.5),
+            self.has_id_card_checkbox
+                .view(|x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeCheckbox(x))),
+            text_input("Phone number (with +)", self.phone_number_input.get_text())
+                .on_input(|x| AppMessage::AddGuestMessage(AddGuestMessage::ChangePhoneNumber(x)))
                 .align_x(Center)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
