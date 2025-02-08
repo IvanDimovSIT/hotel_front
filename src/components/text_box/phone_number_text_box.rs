@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use super::regex_text_box::RegexTextBox;
+use super::{regex_text_box::RegexTextBox, text_box::TextElement};
 
 pub struct PhoneNumberTextBox {
     text_box: RegexTextBox,
@@ -16,12 +16,13 @@ impl PhoneNumberTextBox {
             text_box: RegexTextBox::new(initial_text, 15, regex),
         }
     }
-
-    pub fn get_text(&self) -> &str {
+}
+impl TextElement for PhoneNumberTextBox {
+    fn get_text(&self) -> &str {
         &self.text_box.get_text()
     }
 
-    pub fn update<T>(&mut self, new_text: T)
+    fn update<T>(&mut self, new_text: T)
     where
         T: Into<String>,
     {

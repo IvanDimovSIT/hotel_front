@@ -34,6 +34,7 @@ async fn login_request(
     let url = BASE_URL.to_owned() + LOGIN_PATH;
 
     let client = reqwest::Client::new();
+    println!("POST {url}");
     let result = client
         .post(url)
         .header("Content-Type", "application/json")

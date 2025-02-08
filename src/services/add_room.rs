@@ -51,6 +51,7 @@ async fn add_room_request(
 
     let url = BASE_URL.to_owned() + ADD_ROOM_PATH;
     let client = reqwest::Client::new();
+    println!("POST {url}");
     let result = client
         .post(url)
         .header("Content-Type", "application/json")

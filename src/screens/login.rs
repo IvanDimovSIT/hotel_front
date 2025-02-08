@@ -10,7 +10,7 @@ use iced::{
 
 use crate::{
     app::{AppMessage, GlobalState, Screen, ScreenType},
-    components::text_box::text_box::TextBox,
+    components::text_box::text_box::{TextBox, TextElement},
     services,
     styles::{ERROR_COLOR, FORM_SPACING, TEXT_BOX_WIDTH},
 };
@@ -53,11 +53,6 @@ impl Screen for LoginScreen {
                     Task::none()
                 }
                 LoginMessage::Login => {
-                    println!(
-                        "Logging in with email:'{}' and password '{}'",
-                        self.email.get_text(),
-                        self.password.get_text()
-                    );
                     let error = self.error.clone();
                     let global_state_input = global_state.clone();
                     let global_state_copy = global_state.clone();

@@ -1,4 +1,5 @@
 use app::HotelApp;
+use iced_aw::iced_fonts::REQUIRED_FONT_BYTES;
 use styles::MAIN_THEME;
 use subscriptions::refresh_token_subscription::refresh_token_subscription;
 
@@ -18,5 +19,6 @@ fn main() -> iced::Result {
         .subscription(refresh_token_subscription)
         .window_size((800.0, 600.0))
         .theme(|_| MAIN_THEME)
+        .font(REQUIRED_FONT_BYTES)
         .run_with(HotelApp::new)
 }

@@ -22,6 +22,7 @@ use crate::{
         text_box::{
             number_text_box::{NumberTextBox, NumberType},
             room_number_text_box::RoomNumberTextBox,
+            text_box::TextElement,
         },
     },
     model::{

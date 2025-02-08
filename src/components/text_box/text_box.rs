@@ -1,3 +1,10 @@
+pub trait TextElement {
+    fn get_text(&self) -> &str;
+    fn update<T>(&mut self, new_text: T)
+    where
+        T: Into<String>;
+}
+
 pub struct TextBox {
     text: String,
     max_length: usize,
@@ -12,12 +19,13 @@ impl TextBox {
             max_length,
         }
     }
-
-    pub fn get_text(&self) -> &str {
+}
+impl TextElement for TextBox {
+    fn get_text(&self) -> &str {
         &self.text
     }
 
-    pub fn update<T>(&mut self, new_text: T)
+    fn update<T>(&mut self, new_text: T)
     where
         T: Into<String>,
     {

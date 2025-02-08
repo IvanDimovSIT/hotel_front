@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use super::regex_text_box::RegexTextBox;
+use super::{regex_text_box::RegexTextBox, text_box::TextElement};
 
 pub enum NumberType {
     PositiveInteger,
@@ -27,12 +27,13 @@ impl NumberTextBox {
             text_box: RegexTextBox::new(initial_text, max_length, regex),
         }
     }
-
-    pub fn get_text(&self) -> &str {
+}
+impl TextElement for NumberTextBox {
+    fn get_text(&self) -> &str {
         &self.text_box.get_text()
     }
 
-    pub fn update<T>(&mut self, new_text: T)
+    fn update<T>(&mut self, new_text: T)
     where
         T: Into<String>,
     {

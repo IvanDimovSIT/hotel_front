@@ -7,12 +7,19 @@ use iced::{
     Length::Fill,
     Task,
 };
+use iced_aw::date_picker::Date;
 
 use crate::{
     app::{AppMessage, GlobalState, Screen},
     components::{
         checkbox::Checkbox,
-        text_box::{phone_number_text_box::PhoneNumberTextBox, text_box::TextBox},
+        date_input::DateInput,
+        text_box::{
+            id_card_number_text_box::IdCardNumberTextBox,
+            phone_number_text_box::PhoneNumberTextBox,
+            text_box::{TextBox, TextElement},
+            ucn_text_box::UcnTextBox,
+        },
     },
     styles::{ERROR_COLOR, FORM_SPACING, TEXT_BOX_WIDTH, TITLE_FONT_SIZE},
 };
@@ -23,6 +30,13 @@ pub enum AddGuestMessage {
     ChangeLastName(String),
     ChangeCheckbox(bool),
     ChangePhoneNumber(String),
+    ChangeUcn(String),
+    ChangeIdCardNumber(String),
+    ChangeIdCardIssueAuthority(String),
+    ToggleShowIssueDate,
+    ChangeIdCardIssueDate(Date),
+    ToggleShowValidityDate,
+    ChangeIdCardValidityDate(Date),
 }
 
 pub struct AddGuestScreen {
@@ -31,6 +45,11 @@ pub struct AddGuestScreen {
     last_name_input: TextBox,
     has_id_card_checkbox: Checkbox,
     phone_number_input: PhoneNumberTextBox,
+    id_card_ucn_input: UcnTextBox,
+    id_card_number_input: IdCardNumberTextBox,
+    id_card_issue_authority_input: TextBox,
+    id_card_issue_date_input: DateInput,
+    id_card_validity_input: DateInput,
 }
 impl AddGuestScreen {
     pub fn new() -> Self {
@@ -40,14 +59,69 @@ impl AddGuestScreen {
             last_name_input: TextBox::new("", 20),
             has_id_card_checkbox: Checkbox::new("Id card", false),
             phone_number_input: PhoneNumberTextBox::new(""),
+            id_card_ucn_input: UcnTextBox::new(""),
+            id_card_number_input: IdCardNumberTextBox::new(""),
+            id_card_issue_authority_input: TextBox::new("", 25),
+            id_card_issue_date_input: DateInput::new(
+                "Issue Date",
+                Date::today(),
+                AppMessage::AddGuestMessage(AddGuestMessage::ToggleShowIssueDate),
+            ),
+            id_card_validity_input: DateInput::new(
+                "Valid Until",
+                Date::today(),
+                AppMessage::AddGuestMessage(AddGuestMessage::ToggleShowValidityDate),
+            ),
         }
+    }
+
+    fn view_card_input(&self) -> Element<AppMessage> {
+        if self.has_id_card_checkbox.is_checked() {
+            column![
+                text_input("UCN", self.id_card_ucn_input.get_text())
+                    .on_input(|x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeUcn(x)))
+                    .align_x(Center)
+                    .width(TEXT_BOX_WIDTH)
+                    .line_height(1.5),
+                text_input("Id Card Number", self.id_card_number_input.get_text())
+                    .on_input(
+                        |x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeIdCardNumber(x))
+                    )
+                    .align_x(Center)
+                    .width(TEXT_BOX_WIDTH)
+                    .line_height(1.5),
+                text_input(
+                    "Id Card Issue Authority",
+                    self.id_card_issue_authority_input.get_text()
+                )
+                .on_input(|x| AppMessage::AddGuestMessage(
+                    AddGuestMessage::ChangeIdCardIssueAuthority(x)
+                ))
+                .align_x(Center)
+                .width(TEXT_BOX_WIDTH)
+                .line_height(1.5),
+                self.id_card_issue_date_input
+                    .view(
+                        |x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeIdCardIssueDate(x))
+                    ),
+                self.id_card_validity_input
+                    .view(|x| AppMessage::AddGuestMessage(
+                        AddGuestMessage::ChangeIdCardValidityDate(x)
+                    ))
+            ]
+            .spacing(FORM_SPACING)
+            .align_x(Center)
+        } else {
+            column![]
+        }
+        .into()
     }
 }
 impl Screen for AddGuestScreen {
     fn update(
         &mut self,
         message: AppMessage,
-        global_state: Arc<Mutex<GlobalState>>,
+        _global_state: Arc<Mutex<GlobalState>>,
     ) -> Task<AppMessage> {
         match message {
             AppMessage::AddGuestMessage(m) => match m {
@@ -65,6 +139,36 @@ impl Screen for AddGuestScreen {
                 }
                 AddGuestMessage::ChangePhoneNumber(x) => {
                     self.phone_number_input.update(x);
+                    Task::none()
+                }
+                AddGuestMessage::ChangeUcn(x) => {
+                    self.id_card_ucn_input.update(x);
+                    Task::none()
+                }
+                AddGuestMessage::ChangeIdCardNumber(x) => {
+                    self.id_card_number_input.update(x);
+                    Task::none()
+                }
+                AddGuestMessage::ChangeIdCardIssueAuthority(x) => {
+                    self.id_card_issue_authority_input.update(x);
+                    Task::none()
+                }
+                AddGuestMessage::ToggleShowIssueDate => {
+                    self.id_card_issue_date_input.toggle_show();
+                    Task::none()
+                }
+                AddGuestMessage::ChangeIdCardIssueDate(date) => {
+                    self.id_card_issue_date_input.update_date(date);
+                    self.id_card_issue_date_input.toggle_show();
+                    Task::none()
+                }
+                AddGuestMessage::ToggleShowValidityDate => {
+                    self.id_card_validity_input.toggle_show();
+                    Task::none()
+                }
+                AddGuestMessage::ChangeIdCardValidityDate(date) => {
+                    self.id_card_validity_input.update_date(date);
+                    self.id_card_validity_input.toggle_show();
                     Task::none()
                 }
             },
@@ -88,13 +192,14 @@ impl Screen for AddGuestScreen {
                 .align_x(Center)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
-            self.has_id_card_checkbox
-                .view(|x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeCheckbox(x))),
             text_input("Phone number (with +)", self.phone_number_input.get_text())
                 .on_input(|x| AppMessage::AddGuestMessage(AddGuestMessage::ChangePhoneNumber(x)))
                 .align_x(Center)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
+            self.has_id_card_checkbox
+                .view(|x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeCheckbox(x))),
+            self.view_card_input(),
             text!("{}", self.error)
                 .color(ERROR_COLOR)
                 .size(18)

@@ -1,5 +1,7 @@
 use regex::Regex;
 
+use super::text_box::TextElement;
+
 pub struct RegexTextBox {
     text: String,
     max_length: usize,
@@ -16,12 +18,13 @@ impl RegexTextBox {
             regex,
         }
     }
-
-    pub fn get_text(&self) -> &str {
+}
+impl TextElement for RegexTextBox {
+    fn get_text(&self) -> &str {
         &self.text
     }
 
-    pub fn update<T>(&mut self, new_text: T)
+    fn update<T>(&mut self, new_text: T)
     where
         T: Into<String>,
     {

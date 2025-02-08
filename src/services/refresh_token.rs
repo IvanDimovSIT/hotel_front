@@ -14,6 +14,7 @@ struct RefreshTokenOutput {
 pub async fn refresh_token(token: String) -> Result<JwtToken, String> {
     let url = BASE_URL.to_owned() + REFRESH_TOKEN_PATH;
     let client = reqwest::Client::new();
+    println!("GET {url}");
     let result = client
         .get(url)
         .header("Content-Type", "application/json")

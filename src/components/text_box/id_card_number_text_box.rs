@@ -2,21 +2,21 @@ use regex::Regex;
 
 use super::{regex_text_box::RegexTextBox, text_box::TextElement};
 
-pub struct RoomNumberTextBox {
+pub struct IdCardNumberTextBox {
     text_box: RegexTextBox,
 }
-impl RoomNumberTextBox {
+impl IdCardNumberTextBox {
     pub fn new<T>(initial_text: T) -> Self
     where
         T: Into<String>,
     {
-        let regex = Regex::new("^(\\d*[A-Za-z]?)?$").expect("Error creating room number text box");
+        let regex = Regex::new("^[0-9]*$").expect("Error creating id card number text box");
         Self {
-            text_box: RegexTextBox::new(initial_text, 6, regex),
+            text_box: RegexTextBox::new(initial_text, 10, regex),
         }
     }
 }
-impl TextElement for RoomNumberTextBox {
+impl TextElement for IdCardNumberTextBox {
     fn get_text(&self) -> &str {
         &self.text_box.get_text()
     }
