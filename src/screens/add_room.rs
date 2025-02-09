@@ -4,7 +4,7 @@ use std::{
 };
 
 use iced::{
-    widget::{button, column, row, text, text_input},
+    widget::{button, column, row, scrollable, text, text_input},
     Alignment::Center,
     Element,
     Length::Fill,
@@ -33,7 +33,7 @@ use crate::{
         self,
         add_room::{AddRoomInput, AddRoomResult},
     },
-    styles::{ERROR_COLOR, FORM_SPACING, TEXT_BOX_WIDTH, TITLE_FONT_SIZE},
+    styles::{ERROR_COLOR, FORM_PADDING, FORM_SPACING, TEXT_BOX_WIDTH, TITLE_FONT_SIZE},
     utils::show_notification,
 };
 
@@ -238,43 +238,46 @@ impl Screen for AddRoomScreen {
     }
 
     fn view(&self, global_state: Arc<Mutex<GlobalState>>) -> Element<AppMessage> {
-        column![
-            text!("Add Room")
-                .align_x(Center)
-                .size(TITLE_FONT_SIZE)
-                .width(Fill),
-            text_input("Room Number", self.room_number.get_text())
-                .on_input(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChangeRoomNumber(x)))
-                .align_x(Center)
-                .width(TEXT_BOX_WIDTH)
-                .line_height(1.5),
-            text_input("Floor", self.floor.get_text())
-                .on_input(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChangeFloor(x)))
-                .align_x(Center)
-                .width(TEXT_BOX_WIDTH)
-                .line_height(1.5),
-            text_input("Price", self.price.get_text())
-                .on_input(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChagePrice(x)))
-                .align_x(Center)
-                .width(TEXT_BOX_WIDTH)
-                .line_height(1.5),
-            text!("Bathroom type:"),
-            self.bathroom_type_combo_box
-                .view(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChangeBathroomType(x)))
-                .width(TEXT_BOX_WIDTH),
-            self.view_bed_count_inputs(global_state),
-            text!("{}", self.error)
-                .color(ERROR_COLOR)
-                .size(18)
-                .align_x(Center)
-                .width(Fill),
-            button("Add")
-                .on_press(AppMessage::AddRoomMessage(AddRoomMessage::AddRoom))
-                .height(30)
-                .width(80)
-        ]
-        .spacing(FORM_SPACING)
-        .align_x(Center)
+        scrollable(
+            column![
+                text!("Add Room")
+                    .align_x(Center)
+                    .size(TITLE_FONT_SIZE)
+                    .width(Fill),
+                text_input("Room Number", self.room_number.get_text())
+                    .on_input(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChangeRoomNumber(x)))
+                    .align_x(Center)
+                    .width(TEXT_BOX_WIDTH)
+                    .line_height(1.5),
+                text_input("Floor", self.floor.get_text())
+                    .on_input(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChangeFloor(x)))
+                    .align_x(Center)
+                    .width(TEXT_BOX_WIDTH)
+                    .line_height(1.5),
+                text_input("Price", self.price.get_text())
+                    .on_input(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChagePrice(x)))
+                    .align_x(Center)
+                    .width(TEXT_BOX_WIDTH)
+                    .line_height(1.5),
+                text!("Bathroom type:"),
+                self.bathroom_type_combo_box
+                    .view(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChangeBathroomType(x)))
+                    .width(TEXT_BOX_WIDTH),
+                self.view_bed_count_inputs(global_state),
+                text!("{}", self.error)
+                    .color(ERROR_COLOR)
+                    .size(18)
+                    .align_x(Center)
+                    .width(Fill),
+                button("Add")
+                    .on_press(AppMessage::AddRoomMessage(AddRoomMessage::AddRoom))
+                    .height(30)
+                    .width(80)
+            ]
+            .spacing(FORM_SPACING)
+            .align_x(Center)
+            .padding(FORM_PADDING),
+        )
         .into()
     }
 }

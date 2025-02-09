@@ -12,7 +12,7 @@ use crate::{
     app::{AppMessage, GlobalState, Screen, ScreenType},
     components::text_box::text_box::{TextBox, TextElement},
     services,
-    styles::{ERROR_COLOR, FORM_SPACING, TEXT_BOX_WIDTH},
+    styles::{ERROR_COLOR, FORM_PADDING, FORM_SPACING, TEXT_BOX_WIDTH},
 };
 
 #[derive(Debug, Clone)]
@@ -108,6 +108,7 @@ impl Screen for LoginScreen {
                 .width(80)
         ]
         .spacing(FORM_SPACING)
+        .padding(FORM_PADDING)
         .height(Fill)
         .align_x(Center)
         .into()

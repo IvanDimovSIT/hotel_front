@@ -62,4 +62,8 @@ impl DateInput {
         .font_size(14)
         .into()
     }
+
+    pub fn get_date(&self) -> Date {
+        self.date.clone()
+    }
 }
