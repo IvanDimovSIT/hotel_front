@@ -1,19 +1,21 @@
 use std::sync::{Arc, Mutex};
 
 use iced::{
-    widget::{button, column, scrollable, text, text_input},
+    widget::{button, column, scrollable, shader::wgpu::core::device::global, text, text_input},
     Alignment::Center,
     Element,
     Length::Fill,
     Task,
 };
 use iced_aw::date_picker::Date;
+use uuid::Uuid;
 
 use crate::{
     app::{AppMessage, GlobalState, Screen},
     components::{
         checkbox::Checkbox,
         date_input::DateInput,
+        notification::NotificationType,
         text_box::{
             id_card_number_text_box::IdCardNumberTextBox,
             phone_number_text_box::PhoneNumberTextBox,
@@ -22,8 +24,12 @@ use crate::{
         },
     },
     model::id_card::IdCard,
-    services::add_guest::AddGuestInput,
+    services::{
+        self,
+        add_guest::{AddGuestInput, AddGuestResult},
+    },
     styles::{ERROR_COLOR, FORM_PADDING, FORM_SPACING, TEXT_BOX_WIDTH, TITLE_FONT_SIZE},
+    utils::show_notification,
 };
 
 #[derive(Debug, Clone)]
@@ -41,7 +47,9 @@ pub enum AddGuestMessage {
     ChangeIdCardValidityDate(Date),
     ToggleShowDateOfBirth,
     ChangeDateOfBirth(Date),
+    ShowError(String),
     AddGuest,
+    GuestAdded(Uuid),
 }
 
 pub struct AddGuestScreen {
@@ -146,7 +154,7 @@ impl AddGuestScreen {
         } else {
             self.id_card_ucn_input.get_text().to_owned()
         };
-        let id_card_number = if self.id_card_number_input.get_text().len() < 10 {
+        let id_card_number = if self.id_card_number_input.get_text().len() < 9 {
             return Err("Invalid card number".to_owned());
         } else {
             self.id_card_number_input.get_text().to_owned()
@@ -171,7 +179,7 @@ impl AddGuestScreen {
 
         Ok(IdCard {
             ucn,
-            number: id_card_number,
+            id_card_number,
             issue_authority,
             issue_date,
             validity_date,
@@ -226,7 +234,7 @@ impl AddGuestScreen {
         ))
     }
 
-    fn add_guest(&mut self) -> Task<AppMessage> {
+    fn add_guest(&mut self, global_state: Arc<Mutex<GlobalState>>) -> Task<AppMessage> {
         let raw_input = self.retrieve_and_validate_input();
         let input = if let Ok(ok) = raw_input {
             ok
@@ -235,14 +243,41 @@ impl AddGuestScreen {
             return Task::none();
         };
 
-        todo!("Send request {input:?}")
+        Task::perform(
+            async { services::add_guest::add_guest(global_state, input).await },
+            move |res| match res {
+                Ok(AddGuestResult::GuestAdded(uuid)) => {
+                    AppMessage::AddGuestMessage(AddGuestMessage::GuestAdded(uuid))
+                }
+                Ok(AddGuestResult::Forbidden) => AppMessage::TokenExpired,
+                Ok(AddGuestResult::BadRequest(bad_request)) => {
+                    AppMessage::AddGuestMessage(AddGuestMessage::ShowError(bad_request))
+                }
+                Err(err) => AppMessage::AddGuestMessage(AddGuestMessage::ShowError(err)),
+            },
+        )
+    }
+
+    fn clear_inputs(&mut self) {
+        let today = Date::today();
+
+        self.first_name_input.update("");
+        self.last_name_input.update("");
+        self.id_card_issue_authority_input.update("");
+        self.id_card_number_input.update("");
+        self.id_card_ucn_input.update("");
+        self.phone_number_input.update("");
+        self.date_of_birth_input.update_date(today);
+        self.id_card_issue_date_input.update_date(today);
+        self.id_card_validity_input.update_date(today);
+        self.error = "".to_owned();
     }
 }
 impl Screen for AddGuestScreen {
     fn update(
         &mut self,
         message: AppMessage,
-        _global_state: Arc<Mutex<GlobalState>>,
+        global_state: Arc<Mutex<GlobalState>>,
     ) -> Task<AppMessage> {
         match message {
             AppMessage::AddGuestMessage(m) => match m {
@@ -301,7 +336,15 @@ impl Screen for AddGuestScreen {
                     self.date_of_birth_input.toggle_show();
                     Task::none()
                 }
-                AddGuestMessage::AddGuest => self.add_guest(),
+                AddGuestMessage::AddGuest => self.add_guest(global_state),
+                AddGuestMessage::ShowError(err) => {
+                    self.error = err;
+                    Task::none()
+                }
+                AddGuestMessage::GuestAdded(_uuid) => {
+                    self.clear_inputs();
+                    Task::done(show_notification("Guest added", NotificationType::Success))
+                }
             },
             _ => Task::none(),
         }

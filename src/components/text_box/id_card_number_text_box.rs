@@ -12,7 +12,7 @@ impl IdCardNumberTextBox {
     {
         let regex = Regex::new("^[0-9]*$").expect("Error creating id card number text box");
         Self {
-            text_box: RegexTextBox::new(initial_text, 10, regex),
+            text_box: RegexTextBox::new(initial_text, 9, regex),
         }
     }
 }

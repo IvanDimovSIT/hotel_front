@@ -21,6 +21,7 @@ pub async fn decode_error_response(response: Response) -> String {
             Ok(ok) => ok.error,
             Err(err) => {
                 println!("error deserialising error response: {err}");
+
                 "Unexpected error".to_owned()
             }
         }

@@ -1,11 +1,7 @@
 use std::time::Duration;
 
 use iced::{
-    widget::{container::Style, text, Container},
-    Alignment::Center,
-    Background, Color, Element,
-    Length::Fill,
-    Task, Theme,
+    theme::palette, widget::{container::Style, text, Container}, Alignment::Center, Background, Color, Element, Length::Fill, Task, Theme
 };
 use tokio::time::sleep;
 
@@ -50,16 +46,20 @@ impl Notification {
     }
 
     fn get_style(&self) -> impl Fn(&Theme) -> Style {
-        let background = Some(match self.notification_type {
-            NotificationType::Information => Background::Color(INFORMATION_COLOR),
-            NotificationType::Success => Background::Color(SUCCESS_COLOR),
-            NotificationType::Error => Background::Color(ERROR_COLOR),
-        });
+        let notification_type = self.notification_type.clone();
+        move |theme| {
+            let palette = theme.palette();
+            let background = Some(match notification_type {
+                NotificationType::Information => Background::Color(palette.primary),
+                NotificationType::Success => Background::Color(palette.success),
+                NotificationType::Error => Background::Color(palette.danger),
+            });
 
-        move |_theme| Style {
-            text_color: Some(Color::WHITE),
-            background,
-            ..Default::default()
+            Style {
+                text_color: Some(palette.text),
+                background,
+                ..Default::default()
+            }
         }
     }
 
