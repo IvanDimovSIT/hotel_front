@@ -1,14 +1,16 @@
 use std::time::Duration;
 
 use iced::{
-    theme::palette, widget::{container::Style, text, Container}, Alignment::Center, Background, Color, Element, Length::Fill, Task, Theme
+    theme::palette,
+    widget::{container::Style, text, Container},
+    Alignment::Center,
+    Background, Color, Element,
+    Length::Fill,
+    Task, Theme,
 };
 use tokio::time::sleep;
 
-use crate::{
-    app::AppMessage,
-    styles::{ERROR_COLOR, INFORMATION_COLOR, SUCCESS_COLOR},
-};
+use crate::app::AppMessage;
 
 const NOTIFICATION_TIME: u64 = 4;
 const NOTIFICATION_TEXT_SIZE: f32 = 21.0;

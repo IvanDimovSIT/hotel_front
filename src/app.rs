@@ -14,6 +14,8 @@ use crate::security::{JwtToken, Role};
 use crate::services;
 use crate::utils::show_notification;
 
+const LOGOUT_SUCCESS_MESSAGE: &str = "Logout successful";
+
 #[derive(Debug, Default)]
 pub struct GlobalState {
     pub token: Option<JwtToken>,
@@ -33,6 +35,8 @@ pub trait Screen {
 pub enum AppMessage {
     None,
     RefreshToken,
+    Logout,
+    LogoutSuccess,
     TokenExpired,
     NotificationMessage(NotificationMessage),
     NavigateTo(ScreenType),
@@ -93,6 +97,25 @@ impl HotelApp {
         "Hotel".to_owned()
     }
 
+    fn logout(&mut self) -> Task<AppMessage> {
+        let global_state_input = self.global_state.clone();
+        Task::perform(
+            async { services::logout::logout(global_state_input).await },
+            move |res| match res {
+                Ok(_) => {
+                    AppMessage::LogoutSuccess
+                }
+                Err(err) => show_notification(err, NotificationType::Error),
+            },
+        )
+    }
+
+    fn logout_success(&mut self) -> Task<AppMessage> {
+        self.global_state.lock().unwrap().token = None;
+        Task::done(show_notification(LOGOUT_SUCCESS_MESSAGE, NotificationType::Success))
+            .chain(Task::done(AppMessage::NavigateTo(ScreenType::Login)))
+    }
+
     pub fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
             AppMessage::NavigateTo(screen_type) => self.navigate_to(&screen_type),
@@ -106,6 +129,8 @@ impl HotelApp {
             AppMessage::NotificationMessage(notification_message) => {
                 self.notification.update(notification_message)
             }
+            AppMessage::Logout => self.logout(),
+            AppMessage::LogoutSuccess => self.logout_success(),
             _ => self
                 .current_screen
                 .update(message, self.global_state.clone()),

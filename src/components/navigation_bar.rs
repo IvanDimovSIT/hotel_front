@@ -20,6 +20,9 @@ pub fn view_admin(
     row![
         add_container(
             column![
+                button("Logout")
+                    .on_press(AppMessage::Logout)
+                    .width(NAVIGATION_BUTTON_WIDTH),
                 button("Add Room")
                     .on_press(AppMessage::NavigateTo(ScreenType::AddRoom))
                     .width(NAVIGATION_BUTTON_WIDTH),
@@ -44,7 +47,9 @@ pub fn view_user(
     row![
         add_container(
             column![
-                button("Placeholder1").width(NAVIGATION_BUTTON_WIDTH),
+                button("Logout")
+                    .on_press(AppMessage::Logout)
+                    .width(NAVIGATION_BUTTON_WIDTH),
                 button("Placeholder2").width(NAVIGATION_BUTTON_WIDTH),
                 button("Placeholder3").width(NAVIGATION_BUTTON_WIDTH),
             ]

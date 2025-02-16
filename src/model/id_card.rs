@@ -48,7 +48,7 @@ fn string_to_date(date_string: &str) -> Date {
     const MONTH_INDEX: usize = 1;
     const DAY_INDEX: usize = 2;
     let parts: Vec<_> = date_string.split("-").collect();
-    
+
     if parts.len() != DATE_COMPONENTS {
         println!("Invalid date: '{date_string}'");
         return Date::default();
