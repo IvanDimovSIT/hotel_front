@@ -6,3 +6,4 @@ pub const ADD_ROOM_PATH: &str = "room";
 pub const ADD_GUEST_PATH: &str = "guest";
 pub const REFRESH_TOKEN_PATH: &str = "auth/refresh";
 pub const LOGOUT_PATH: &str = "auth/logout";
+pub const REGISTER_PATH: &str = "auth/register";

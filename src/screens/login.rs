@@ -105,6 +105,10 @@ impl Screen for LoginScreen {
             button("Log in")
                 .on_press(AppMessage::LoginMessage(LoginMessage::Login))
                 .height(30)
+                .width(80),
+            button("Register")
+                .on_press(AppMessage::NavigateTo(ScreenType::Register))
+                .height(30)
                 .width(80)
         ]
         .spacing(FORM_SPACING)

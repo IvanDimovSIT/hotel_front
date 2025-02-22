@@ -10,6 +10,7 @@ use crate::screens::add_guest::{AddGuestMessage, AddGuestScreen};
 use crate::screens::add_room::{AddRoomMessage, AddRoomScreen};
 use crate::screens::home::HomeScreen;
 use crate::screens::login::{LoginMessage, LoginScreen};
+use crate::screens::register::{RegisterMessage, RegisterScreen};
 use crate::security::{JwtToken, Role};
 use crate::services;
 use crate::utils::show_notification;
@@ -43,6 +44,7 @@ pub enum AppMessage {
     LoginMessage(LoginMessage),
     AddRoomMessage(AddRoomMessage),
     AddGuestMessage(AddGuestMessage),
+    RegisterMessage(RegisterMessage),
 }
 
 #[derive(Debug, Clone)]
@@ -51,6 +53,7 @@ pub enum ScreenType {
     Login,
     AddRoom,
     AddGuest,
+    Register,
 }
 impl ScreenType {
     fn create_screen(&self) -> Box<dyn Screen> {
@@ -59,6 +62,7 @@ impl ScreenType {
             ScreenType::Login => Box::new(LoginScreen::new()),
             ScreenType::AddRoom => Box::new(AddRoomScreen::new()),
             ScreenType::AddGuest => Box::new(AddGuestScreen::new()),
+            ScreenType::Register => Box::new(RegisterScreen::new()),
         }
     }
 }
@@ -102,9 +106,7 @@ impl HotelApp {
         Task::perform(
             async { services::logout::logout(global_state_input).await },
             move |res| match res {
-                Ok(_) => {
-                    AppMessage::LogoutSuccess
-                }
+                Ok(_) => AppMessage::LogoutSuccess,
                 Err(err) => show_notification(err, NotificationType::Error),
             },
         )
@@ -112,8 +114,11 @@ impl HotelApp {
 
     fn logout_success(&mut self) -> Task<AppMessage> {
         self.global_state.lock().unwrap().token = None;
-        Task::done(show_notification(LOGOUT_SUCCESS_MESSAGE, NotificationType::Success))
-            .chain(Task::done(AppMessage::NavigateTo(ScreenType::Login)))
+        Task::done(show_notification(
+            LOGOUT_SUCCESS_MESSAGE,
+            NotificationType::Success,
+        ))
+        .chain(Task::done(AppMessage::NavigateTo(ScreenType::Login)))
     }
 
     pub fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
@@ -139,7 +144,8 @@ impl HotelApp {
 
     pub fn view(&self) -> Element<AppMessage> {
         column![match self.screen_type {
-            ScreenType::Login => self.current_screen.view(self.global_state.clone()),
+            ScreenType::Login | ScreenType::Register =>
+                self.current_screen.view(self.global_state.clone()),
             _ => match &self.global_state.lock().unwrap().token {
                 Some(some) => match some.role {
                     Role::User => view_user(self.global_state.clone(), &*self.current_screen),
