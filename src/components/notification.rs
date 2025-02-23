@@ -1,10 +1,9 @@
 use std::time::Duration;
 
 use iced::{
-    theme::palette,
     widget::{container::Style, text, Container},
     Alignment::Center,
-    Background, Color, Element,
+    Background, Element,
     Length::Fill,
     Task, Theme,
 };
@@ -58,7 +57,7 @@ impl Notification {
             });
 
             Style {
-                text_color: Some(palette.text),
+                text_color: Some(palette.background),
                 background,
                 ..Default::default()
             }

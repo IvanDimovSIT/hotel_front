@@ -3,7 +3,6 @@ use std::sync::{Arc, Mutex};
 use iced::{
     widget::{button, column, text, text_input},
     Alignment::Center,
-    Element,
     Length::Fill,
     Task,
 };
@@ -12,9 +11,10 @@ use uuid::Uuid;
 use crate::{
     app::{AppMessage, GlobalState, Screen, ScreenType},
     components::{
-        notification::{NotificationMessage, NotificationType},
+        notification::NotificationType,
         text_box::text_box::{TextBox, TextElement},
     },
+    constants::{MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH},
     services::{
         self,
         register::{RegisterInput, RegisterResult},
@@ -42,9 +42,9 @@ pub struct RegisterScreen {
 impl RegisterScreen {
     pub fn new() -> Self {
         Self {
-            email: TextBox::new("", 40),
-            password: TextBox::new("", 24),
-            confirm_password: TextBox::new("", 24),
+            email: TextBox::new("", MAX_EMAIL_LENGTH),
+            password: TextBox::new("", MAX_PASSWORD_LENGTH),
+            confirm_password: TextBox::new("", MAX_PASSWORD_LENGTH),
             error: "".to_owned(),
         }
     }

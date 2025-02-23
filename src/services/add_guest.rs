@@ -11,9 +11,8 @@ use uuid::Uuid;
 
 use crate::{
     app::GlobalState,
-    components::validator::Validator,
     constants::{ADD_GUEST_PATH, BASE_URL},
-    model::id_card::{self, IdCard, IdCardDto},
+    model::id_card::{IdCard, IdCardDto},
     utils::decode_error_response,
 };
 

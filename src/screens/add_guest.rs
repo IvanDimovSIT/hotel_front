@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use iced::{
-    widget::{button, column, scrollable, shader::wgpu::core::device::global, text, text_input},
+    widget::{button, column, scrollable, text, text_input},
     Alignment::Center,
     Element,
     Length::Fill,

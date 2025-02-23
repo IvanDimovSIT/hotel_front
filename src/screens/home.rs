@@ -1,10 +1,16 @@
 use std::sync::{Arc, Mutex};
 
-use iced::{widget::text, Alignment::Center, Element, Length::Fill, Task};
+use iced::{
+    widget::{column, text},
+    Alignment::Center,
+    Element,
+    Length::Fill,
+    Task,
+};
 
 use crate::{
     app::{AppMessage, GlobalState, Screen},
-    styles::TITLE_FONT_SIZE,
+    styles::{FORM_PADDING, FORM_SPACING, TITLE_FONT_SIZE},
 };
 
 pub struct HomeScreen;
@@ -16,17 +22,19 @@ impl HomeScreen {
 impl Screen for HomeScreen {
     fn update(
         &mut self,
-        message: AppMessage,
-        global_state: Arc<Mutex<GlobalState>>,
+        _message: AppMessage,
+        _global_state: Arc<Mutex<GlobalState>>,
     ) -> Task<AppMessage> {
         Task::none()
     }
 
     fn view(&self, _global_state: Arc<Mutex<GlobalState>>) -> Element<AppMessage> {
-        text!("Hotel App")
+        column![text!("Hotel App")
             .size(TITLE_FONT_SIZE)
             .width(Fill)
-            .align_x(Center)
-            .into()
+            .align_x(Center)]
+        .spacing(FORM_SPACING)
+        .padding(FORM_PADDING)
+        .into()
     }
 }

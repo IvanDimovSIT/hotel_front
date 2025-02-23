@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use iced::{
-    widget::{button, column, text, text_input},
+    widget::{button, column, row, text, text_input},
     Alignment::Center,
     Element,
     Length::Fill,
@@ -10,15 +10,22 @@ use iced::{
 
 use crate::{
     app::{AppMessage, GlobalState, Screen, ScreenType},
-    components::text_box::text_box::{TextBox, TextElement},
-    services,
+    components::{
+        notification::NotificationType,
+        text_box::text_box::{TextBox, TextElement},
+    },
+    constants::{MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH},
+    services::{self, send_otp::SendOtpResult},
     styles::{ERROR_COLOR, FORM_PADDING, FORM_SPACING, TEXT_BOX_WIDTH},
+    utils::show_notification,
 };
 
 #[derive(Debug, Clone)]
 pub enum LoginMessage {
     ChangeEmail(String),
     ChangePassword(String),
+    ResetPassword,
+    OtpSent,
     Login,
 }
 
@@ -30,10 +37,46 @@ pub struct LoginScreen {
 impl LoginScreen {
     pub fn new() -> Self {
         Self {
-            email: TextBox::new("", 40),
-            password: TextBox::new("", 24),
+            email: TextBox::new("", MAX_EMAIL_LENGTH),
+            password: TextBox::new("", MAX_PASSWORD_LENGTH),
             error: Arc::new(Mutex::new("".to_owned())),
         }
+    }
+
+    fn reset_password(&mut self, global_state: Arc<Mutex<GlobalState>>) -> Task<AppMessage> {
+        let lock = global_state.lock().unwrap();
+        if lock
+            .validator
+            .validate_email(self.email.get_text())
+            .is_err()
+        {
+            *self.error.lock().unwrap() = "Enter a valid email to reset password".to_owned();
+            return Task::none();
+        }
+        drop(lock);
+
+        let email_input = self.email.get_text().to_owned();
+        let email_copy = email_input.clone();
+        let error_display = self.error.clone();
+
+        Task::perform(
+            async { services::send_otp::send_otp(email_input).await },
+            move |res| match res {
+                Ok(SendOtpResult::Success) => {
+                    global_state.lock().unwrap().email = Some(email_copy.clone());
+                    AppMessage::LoginMessage(LoginMessage::OtpSent)
+                }
+                Ok(SendOtpResult::BadRequest(err)) => {
+                    *error_display.lock().unwrap() = err.to_owned();
+                    AppMessage::None
+                }
+                Err(err) => {
+                    *error_display.lock().unwrap() = "Unexpected error".to_owned();
+                    println!("Error sending otp: {err}");
+                    AppMessage::None
+                }
+            },
+        )
     }
 }
 impl Screen for LoginScreen {
@@ -74,6 +117,14 @@ impl Screen for LoginScreen {
                         },
                     )
                 }
+                LoginMessage::ResetPassword => self.reset_password(global_state),
+                LoginMessage::OtpSent => Task::done(show_notification(
+                    "Code sent, check your email",
+                    NotificationType::Information,
+                ))
+                .chain(Task::done(AppMessage::NavigateTo(
+                    ScreenType::ResetPassword,
+                ))),
             },
             _ => Task::none(),
         }
@@ -106,10 +157,17 @@ impl Screen for LoginScreen {
                 .on_press(AppMessage::LoginMessage(LoginMessage::Login))
                 .height(30)
                 .width(80),
-            button("Register")
-                .on_press(AppMessage::NavigateTo(ScreenType::Register))
-                .height(30)
-                .width(80)
+            row![
+                button("Register")
+                    .on_press(AppMessage::NavigateTo(ScreenType::Register))
+                    .height(30)
+                    .width(140),
+                button("Reset password")
+                    .on_press(AppMessage::LoginMessage(LoginMessage::ResetPassword))
+                    .height(30)
+                    .width(140),
+            ]
+            .spacing(10)
         ]
         .spacing(FORM_SPACING)
         .padding(FORM_PADDING)

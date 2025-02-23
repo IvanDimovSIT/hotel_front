@@ -11,6 +11,7 @@ use crate::screens::add_room::{AddRoomMessage, AddRoomScreen};
 use crate::screens::home::HomeScreen;
 use crate::screens::login::{LoginMessage, LoginScreen};
 use crate::screens::register::{RegisterMessage, RegisterScreen};
+use crate::screens::reset_password::{ResetPasswordMessage, ResetPasswordScreen};
 use crate::security::{JwtToken, Role};
 use crate::services;
 use crate::utils::show_notification;
@@ -21,6 +22,7 @@ const LOGOUT_SUCCESS_MESSAGE: &str = "Logout successful";
 pub struct GlobalState {
     pub token: Option<JwtToken>,
     pub validator: Validator,
+    pub email: Option<String>,
 }
 
 pub trait Screen {
@@ -45,6 +47,7 @@ pub enum AppMessage {
     AddRoomMessage(AddRoomMessage),
     AddGuestMessage(AddGuestMessage),
     RegisterMessage(RegisterMessage),
+    ResetPasswordMessage(ResetPasswordMessage),
 }
 
 #[derive(Debug, Clone)]
@@ -54,6 +57,7 @@ pub enum ScreenType {
     AddRoom,
     AddGuest,
     Register,
+    ResetPassword,
 }
 impl ScreenType {
     fn create_screen(&self) -> Box<dyn Screen> {
@@ -63,6 +67,7 @@ impl ScreenType {
             ScreenType::AddRoom => Box::new(AddRoomScreen::new()),
             ScreenType::AddGuest => Box::new(AddGuestScreen::new()),
             ScreenType::Register => Box::new(RegisterScreen::new()),
+            ScreenType::ResetPassword => Box::new(ResetPasswordScreen::new()),
         }
     }
 }
@@ -144,7 +149,7 @@ impl HotelApp {
 
     pub fn view(&self) -> Element<AppMessage> {
         column![match self.screen_type {
-            ScreenType::Login | ScreenType::Register =>
+            ScreenType::Login | ScreenType::Register | ScreenType::ResetPassword =>
                 self.current_screen.view(self.global_state.clone()),
             _ => match &self.global_state.lock().unwrap().token {
                 Some(some) => match some.role {
