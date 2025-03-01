@@ -244,7 +244,7 @@ impl AddGuestScreen {
         };
 
         Task::perform(
-            async { services::add_guest::add_guest(global_state, input).await },
+            services::add_guest::add_guest(global_state, input),
             move |res| match res {
                 Ok(AddGuestResult::GuestAdded(uuid)) => {
                     AppMessage::AddGuestMessage(AddGuestMessage::GuestAdded(uuid))

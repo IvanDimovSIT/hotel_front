@@ -15,7 +15,11 @@ use crate::{
         text_box::text_box::{TextBox, TextElement},
     },
     constants::{MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH},
-    services::{self, send_otp::SendOtpResult},
+    services::{
+        self,
+        reset_password::{reset_password, ResetPasswordInput, ResetPasswordResult},
+        send_otp::SendOtpResult,
+    },
     styles::{ERROR_COLOR, FORM_PADDING, FORM_SPACING, TEXT_BOX_WIDTH},
     utils::show_notification,
 };
@@ -25,8 +29,9 @@ pub enum ResetPasswordMessage {
     ChangeOtp(String),
     ChangePassword(String),
     ChangeConfirmPassword(String),
-    ErrorResendingCode(String),
+    SetError(String),
     ResetPassword,
+    ResetPasswordSuccess,
     ResendCode,
     CodeResent { email: String },
 }
@@ -66,7 +71,7 @@ impl ResetPasswordScreen {
                     })
                 }
                 Ok(SendOtpResult::BadRequest(err)) => {
-                    AppMessage::ResetPasswordMessage(ResetPasswordMessage::ErrorResendingCode(err))
+                    AppMessage::ResetPasswordMessage(ResetPasswordMessage::SetError(err))
                 }
                 Err(err) => {
                     println!("Error sending otp: {err}");
@@ -74,6 +79,21 @@ impl ResetPasswordScreen {
                 }
             },
         )
+    }
+
+    fn create_reset_password_task(input: ResetPasswordInput) -> Task<AppMessage> {
+        Task::perform(reset_password(input), |res| match res {
+            Ok(ResetPasswordResult::PasswordReset) => {
+                AppMessage::ResetPasswordMessage(ResetPasswordMessage::ResetPasswordSuccess)
+            }
+            Ok(ResetPasswordResult::BadRequest(err)) => {
+                AppMessage::ResetPasswordMessage(ResetPasswordMessage::SetError(err))
+            }
+            Err(err) => {
+                println!("Error resetting password'{err}'");
+                show_notification("Unexpected error", NotificationType::Error)
+            }
+        })
     }
 
     fn reset_password(&mut self, global_state: Arc<Mutex<GlobalState>>) -> Task<AppMessage> {
@@ -112,8 +132,13 @@ impl ResetPasswordScreen {
             );
             return Task::none();
         }
+        let input = ResetPasswordInput {
+            email,
+            otp,
+            new_password: password,
+        };
 
-        todo!("Send reset password request with email '{email}', otp '{otp}' and password '{password}' ")
+        Self::create_reset_password_task(input)
     }
 }
 impl Screen for ResetPasswordScreen {
@@ -138,7 +163,7 @@ impl Screen for ResetPasswordScreen {
                 }
                 ResetPasswordMessage::ResendCode => self.resend_code(global_state),
                 ResetPasswordMessage::ResetPassword => self.reset_password(global_state),
-                ResetPasswordMessage::ErrorResendingCode(err) => {
+                ResetPasswordMessage::SetError(err) => {
                     self.error = err;
                     Task::none()
                 }
@@ -149,6 +174,11 @@ impl Screen for ResetPasswordScreen {
                         NotificationType::Information,
                     ))
                 }
+                ResetPasswordMessage::ResetPasswordSuccess => Task::done(show_notification(
+                    "Password reset successful",
+                    NotificationType::Success,
+                ))
+                .chain(Task::done(AppMessage::NavigateTo(ScreenType::Login))),
             },
             _ => Task::none(),
         }

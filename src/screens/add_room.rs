@@ -200,9 +200,7 @@ impl Screen for AddRoomScreen {
                             let global_state_input = global_state.clone();
 
                             Task::perform(
-                                async {
-                                    services::add_room::add_room(global_state_input, input).await
-                                },
+                                services::add_room::add_room(global_state_input, input),
                                 move |res| match res {
                                     Ok(AddRoomResult::Added(uuid)) => {
                                         AppMessage::AddRoomMessage(AddRoomMessage::RoomAdded(uuid))

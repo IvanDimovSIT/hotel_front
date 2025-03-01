@@ -102,7 +102,7 @@ impl Screen for LoginScreen {
                     let email = self.email.get_text().to_owned();
                     let password = self.password.get_text().to_owned();
                     Task::perform(
-                        async { services::login::login(global_state_input, email, password).await },
+                        services::login::login(global_state_input, email, password),
                         move |res| match res {
                             Ok(token) => {
                                 println!("Set token: '{token:?}'");

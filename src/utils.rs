@@ -14,6 +14,7 @@ pub async fn decode_error_response(response: Response) -> String {
     }
 
     if response.status().is_success() {
+        println!("Decoding error from 2xx response");
         "".to_owned()
     } else {
         let error_response: Result<ErrorResponse, _> = response.json().await;

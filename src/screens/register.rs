@@ -71,21 +71,18 @@ impl RegisterScreen {
             password: self.password.get_text().to_owned(),
         };
 
-        Task::perform(
-            async { services::register::register(input).await },
-            |res| match res {
-                Ok(RegisterResult::Registered(uid)) => {
-                    AppMessage::RegisterMessage(RegisterMessage::Registered(uid))
-                }
-                Ok(RegisterResult::BadRequest(err)) => {
-                    AppMessage::RegisterMessage(RegisterMessage::UpdateError(err))
-                }
-                Err(err) => {
-                    println!("Error registering: '{err}'");
-                    show_notification("Unexpected error", NotificationType::Error)
-                }
-            },
-        )
+        Task::perform(services::register::register(input), |res| match res {
+            Ok(RegisterResult::Registered(uid)) => {
+                AppMessage::RegisterMessage(RegisterMessage::Registered(uid))
+            }
+            Ok(RegisterResult::BadRequest(err)) => {
+                AppMessage::RegisterMessage(RegisterMessage::UpdateError(err))
+            }
+            Err(err) => {
+                println!("Error registering: '{err}'");
+                show_notification("Unexpected error", NotificationType::Error)
+            }
+        })
     }
 }
 impl Screen for RegisterScreen {
