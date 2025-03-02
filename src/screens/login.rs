@@ -11,6 +11,7 @@ use iced::{
 use crate::{
     app::{AppMessage, GlobalState, Screen, ScreenType},
     components::{
+        focus_chain::FocusChain,
         notification::NotificationType,
         text_box::text_box::{TextBox, TextElement},
     },
@@ -27,37 +28,42 @@ pub enum LoginMessage {
     ResetPassword,
     OtpSent,
     Login,
+    SetError(String),
 }
+
+const EMAIL_ID: &str = "Login Email";
+const PASSWORD_ID: &str = "Login Password";
 
 pub struct LoginScreen {
     email: TextBox,
     password: TextBox,
-    error: Arc<Mutex<String>>,
+    error: String,
+    focus_chain: FocusChain,
 }
 impl LoginScreen {
     pub fn new() -> Self {
         Self {
             email: TextBox::new("", MAX_EMAIL_LENGTH),
             password: TextBox::new("", MAX_PASSWORD_LENGTH),
-            error: Arc::new(Mutex::new("".to_owned())),
+            error: "".to_owned(),
+            focus_chain: FocusChain::new(vec![EMAIL_ID, PASSWORD_ID]),
         }
     }
 
     fn reset_password(&mut self, global_state: Arc<Mutex<GlobalState>>) -> Task<AppMessage> {
-        let lock = global_state.lock().unwrap();
-        if lock
+        if global_state
+            .lock()
+            .unwrap()
             .validator
             .validate_email(self.email.get_text())
             .is_err()
         {
-            *self.error.lock().unwrap() = "Enter a valid email to reset password".to_owned();
+            self.error = "Enter a valid email to reset password".to_owned();
             return Task::none();
         }
-        drop(lock);
 
         let email_input = self.email.get_text().to_owned();
         let email_copy = email_input.clone();
-        let error_display = self.error.clone();
 
         Task::perform(
             async { services::send_otp::send_otp(email_input).await },
@@ -67,13 +73,11 @@ impl LoginScreen {
                     AppMessage::LoginMessage(LoginMessage::OtpSent)
                 }
                 Ok(SendOtpResult::BadRequest(err)) => {
-                    *error_display.lock().unwrap() = err.to_owned();
-                    AppMessage::None
+                    AppMessage::LoginMessage(LoginMessage::SetError(err))
                 }
                 Err(err) => {
-                    *error_display.lock().unwrap() = "Unexpected error".to_owned();
                     println!("Error sending otp: {err}");
-                    AppMessage::None
+                    AppMessage::LoginMessage(LoginMessage::SetError(err))
                 }
             },
         )
@@ -88,15 +92,16 @@ impl Screen for LoginScreen {
         match message {
             AppMessage::LoginMessage(login_message) => match login_message {
                 LoginMessage::ChangeEmail(email) => {
+                    self.focus_chain.set_focus(Some(EMAIL_ID));
                     self.email.update(email);
                     Task::none()
                 }
                 LoginMessage::ChangePassword(password) => {
+                    self.focus_chain.set_focus(Some(PASSWORD_ID));
                     self.password.update(password);
                     Task::none()
                 }
                 LoginMessage::Login => {
-                    let error = self.error.clone();
                     let global_state_input = global_state.clone();
                     let global_state_copy = global_state.clone();
                     let email = self.email.get_text().to_owned();
@@ -111,8 +116,7 @@ impl Screen for LoginScreen {
                             }
                             Err(err) => {
                                 println!("Error: {err}");
-                                *error.lock().unwrap() = err;
-                                AppMessage::None
+                                AppMessage::LoginMessage(LoginMessage::SetError(err))
                             }
                         },
                     )
@@ -125,7 +129,19 @@ impl Screen for LoginScreen {
                 .chain(Task::done(AppMessage::NavigateTo(
                     ScreenType::ResetPassword,
                 ))),
+                LoginMessage::SetError(err) => {
+                    self.error = err;
+                    Task::none()
+                }
             },
+            AppMessage::SelectNext => {
+                self.focus_chain.set_next();
+                self.focus_chain.apply_focus()
+            }
+            AppMessage::SelectPrev => {
+                self.focus_chain.set_prev();
+                self.focus_chain.apply_focus()
+            }
             _ => Task::none(),
         }
     }
@@ -138,17 +154,21 @@ impl Screen for LoginScreen {
                 .align_x(Center)
                 .width(Fill),
             text_input("Email", self.email.get_text())
+                .id(EMAIL_ID)
                 .on_input(|x| AppMessage::LoginMessage(LoginMessage::ChangeEmail(x)))
+                .on_submit(AppMessage::LoginMessage(LoginMessage::Login))
                 .align_x(Center)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
             text_input("Password", self.password.get_text())
+                .id(PASSWORD_ID)
                 .on_input(|x| AppMessage::LoginMessage(LoginMessage::ChangePassword(x)))
+                .on_submit(AppMessage::LoginMessage(LoginMessage::Login))
                 .align_x(Center)
                 .secure(true)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
-            text!("{}", self.error.lock().unwrap())
+            text!("{}", self.error)
                 .color(ERROR_COLOR)
                 .size(18)
                 .align_x(Center)

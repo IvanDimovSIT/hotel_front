@@ -16,8 +16,6 @@ use crate::security::{JwtToken, Role};
 use crate::services;
 use crate::utils::show_notification;
 
-const LOGOUT_SUCCESS_MESSAGE: &str = "Logout successful";
-
 #[derive(Debug, Default)]
 pub struct GlobalState {
     pub token: Option<JwtToken>,
@@ -37,9 +35,10 @@ pub trait Screen {
 #[derive(Debug, Clone)]
 pub enum AppMessage {
     None,
+    SelectNext,
+    SelectPrev,
     RefreshToken,
     Logout,
-    LogoutSuccess,
     TokenExpired,
     NotificationMessage(NotificationMessage),
     NavigateTo(ScreenType),
@@ -107,23 +106,24 @@ impl HotelApp {
     }
 
     fn logout(&mut self) -> Task<AppMessage> {
-        let global_state_input = self.global_state.clone();
-        Task::perform(
-            async { services::logout::logout(global_state_input).await },
-            move |res| match res {
-                Ok(_) => AppMessage::LogoutSuccess,
-                Err(err) => show_notification(err, NotificationType::Error),
-            },
-        )
-    }
+        let mut lock = self.global_state.lock().unwrap();
+        let token = lock.token.as_ref().map(|jwt| jwt.token_string.clone());
 
-    fn logout_success(&mut self) -> Task<AppMessage> {
-        self.global_state.lock().unwrap().token = None;
-        Task::done(show_notification(
-            LOGOUT_SUCCESS_MESSAGE,
-            NotificationType::Success,
+        lock.token = None;
+        drop(lock);
+        Task::done(AppMessage::NavigateTo(ScreenType::Login)).chain(Task::perform(
+            services::logout::logout(token),
+            move |res| match res {
+                Ok(_) => {
+                    println!("Logged out");
+                    AppMessage::None
+                }
+                Err(err) => {
+                    println!("Error loging out: {err}");
+                    AppMessage::None
+                }
+            },
         ))
-        .chain(Task::done(AppMessage::NavigateTo(ScreenType::Login)))
     }
 
     pub fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
@@ -140,7 +140,6 @@ impl HotelApp {
                 self.notification.update(notification_message)
             }
             AppMessage::Logout => self.logout(),
-            AppMessage::LogoutSuccess => self.logout_success(),
             _ => self
                 .current_screen
                 .update(message, self.global_state.clone()),

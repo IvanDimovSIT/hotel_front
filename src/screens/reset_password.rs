@@ -225,17 +225,17 @@ impl Screen for ResetPasswordScreen {
                     ResetPasswordMessage::ResetPassword
                 ))
                 .height(30)
-                .width(140),
+                .width(150),
             button("Resend code")
                 .on_press(AppMessage::ResetPasswordMessage(
                     ResetPasswordMessage::ResendCode
                 ))
                 .height(30)
-                .width(140),
+                .width(150),
             button("Back to login")
                 .on_press(AppMessage::NavigateTo(ScreenType::Login))
                 .height(30)
-                .width(140)
+                .width(150)
         ]
         .spacing(FORM_SPACING)
         .padding(FORM_PADDING)

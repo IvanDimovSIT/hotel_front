@@ -30,18 +30,11 @@ async fn logout_request(token: Option<String>) -> Result<(), Box<dyn Error>> {
     }
 }
 
-pub async fn logout(global_state: Arc<Mutex<GlobalState>>) -> Result<(), String> {
-    let token = {
-        let guard = global_state.lock().unwrap();
-        if let Some(some) = &guard.token {
-            Some(some.token_string.clone())
-        } else {
-            None
-        }
-    };
+pub async fn logout(token: Option<String>) -> Result<(), String> {
     if token.is_none() {
         return Ok(());
     }
+
     let result = logout_request(token).await;
     match result {
         Ok(_) => Ok(()),
