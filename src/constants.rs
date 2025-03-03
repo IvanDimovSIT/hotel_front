@@ -1,5 +1,7 @@
 pub const REFRESH_TOKEN_PERIOD: u64 = 5 * 60;
 
+pub const DEFAULT_WINDOW_SIZE: (f32, f32) = (800.0, 600.0);
+
 pub const MAX_PASSWORD_LENGTH: usize = 24;
 pub const MAX_EMAIL_LENGTH: usize = 40;
 

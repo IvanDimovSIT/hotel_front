@@ -18,6 +18,7 @@ use crate::{
         combo_box::{
             bathroom_type_combo_box::BathroomTypeComboBox, bed_size_combo_box::BedSizeComboBox,
         },
+        focus_chain::FocusChain,
         notification::NotificationType,
         text_box::{
             number_text_box::{NumberTextBox, NumberType},
@@ -52,6 +53,10 @@ pub enum AddRoomMessage {
     ShowError(String),
 }
 
+const ROOM_NUMBER_ID: &str = "Add Room Room Number";
+const FLOOR_ID: &str = "Add Room Floor";
+const PRICE_ID: &str = "Add Room Price";
+
 pub struct AddRoomScreen {
     id_counter: u64,
     price: NumberTextBox,
@@ -60,6 +65,7 @@ pub struct AddRoomScreen {
     bathroom_type_combo_box: BathroomTypeComboBox,
     bed_count_inputs: BTreeMap<u64, BedCountInput>,
     error: String,
+    focus_chain: FocusChain,
 }
 impl AddRoomScreen {
     pub fn new() -> Self {
@@ -71,13 +77,14 @@ impl AddRoomScreen {
             bathroom_type_combo_box: BathroomTypeComboBox::new(),
             bed_count_inputs: BTreeMap::new(),
             error: "".to_owned(),
+            focus_chain: FocusChain::new(vec![ROOM_NUMBER_ID, FLOOR_ID, PRICE_ID]),
         }
     }
 
     fn view_bed_count_inputs(&self, global_state: Arc<Mutex<GlobalState>>) -> Element<AppMessage> {
         let mut col = column![button("Add Beds")
             .on_press(AppMessage::AddRoomMessage(AddRoomMessage::AddBedSizeInput))];
-        for (_, i) in &self.bed_count_inputs {
+        for i in self.bed_count_inputs.values() {
             col = col.push(i.view(global_state.clone()));
         }
 
@@ -86,7 +93,7 @@ impl AddRoomScreen {
 
     fn get_beds(&self) -> Vec<Bed> {
         let mut beds: HashMap<BedSize, Bed> = HashMap::new();
-        for (_, bed) in &self.bed_count_inputs {
+        for bed in self.bed_count_inputs.values() {
             if beds.contains_key(&bed.bed_size.get_selected()) {
                 beds.get_mut(&bed.bed_size.get_selected()).unwrap().count +=
                     bed.count.get_text().parse::<i16>().unwrap_or_default();
@@ -99,7 +106,7 @@ impl AddRoomScreen {
                 beds.insert(size, new_bed);
             }
         }
-        beds.into_iter().map(|(_, bed)| bed).collect()
+        beds.into_values().collect()
     }
 
     fn get_input(&self) -> Result<AddRoomInput, String> {
@@ -156,14 +163,17 @@ impl Screen for AddRoomScreen {
         match message {
             AppMessage::AddRoomMessage(add_room_message) => match add_room_message {
                 AddRoomMessage::ChangeRoomNumber(room_number) => {
+                    self.focus_chain.set_focus(Some(ROOM_NUMBER_ID));
                     self.room_number.update(room_number);
                     Task::none()
                 }
                 AddRoomMessage::ChangeFloor(floor) => {
+                    self.focus_chain.set_focus(Some(FLOOR_ID));
                     self.floor.update(floor);
                     Task::none()
                 }
                 AddRoomMessage::ChagePrice(price) => {
+                    self.focus_chain.set_focus(Some(PRICE_ID));
                     self.price.update(price);
                     Task::none()
                 }
@@ -231,6 +241,14 @@ impl Screen for AddRoomScreen {
                     Task::none()
                 }
             },
+            AppMessage::SelectNext => {
+                self.focus_chain.set_next();
+                self.focus_chain.apply_focus()
+            }
+            AppMessage::SelectPrev => {
+                self.focus_chain.set_prev();
+                self.focus_chain.apply_focus()
+            }
             _ => Task::none(),
         }
     }
@@ -242,18 +260,24 @@ impl Screen for AddRoomScreen {
                     .align_x(Center)
                     .size(TITLE_FONT_SIZE)
                     .width(Fill),
-                text_input("Room Number", self.room_number.get_text())
+                text_input("Room Number (123B)", self.room_number.get_text())
+                    .id(ROOM_NUMBER_ID)
                     .on_input(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChangeRoomNumber(x)))
+                    .on_submit(AppMessage::AddRoomMessage(AddRoomMessage::AddRoom))
                     .align_x(Center)
                     .width(TEXT_BOX_WIDTH)
                     .line_height(1.5),
                 text_input("Floor", self.floor.get_text())
+                    .id(FLOOR_ID)
                     .on_input(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChangeFloor(x)))
+                    .on_submit(AppMessage::AddRoomMessage(AddRoomMessage::AddRoom))
                     .align_x(Center)
                     .width(TEXT_BOX_WIDTH)
                     .line_height(1.5),
                 text_input("Price", self.price.get_text())
+                    .id(PRICE_ID)
                     .on_input(|x| AppMessage::AddRoomMessage(AddRoomMessage::ChagePrice(x)))
+                    .on_submit(AppMessage::AddRoomMessage(AddRoomMessage::AddRoom))
                     .align_x(Center)
                     .width(TEXT_BOX_WIDTH)
                     .line_height(1.5),
@@ -309,6 +333,7 @@ impl BedCountInput {
                         input_id: self.id
                     })
                 )
+                .on_submit(AppMessage::AddRoomMessage(AddRoomMessage::AddRoom))
                 .width(80.0)
                 .align_x(Center),
             button("Remove")

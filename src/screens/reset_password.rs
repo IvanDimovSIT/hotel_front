@@ -11,10 +11,11 @@ use iced::{
 use crate::{
     app::{AppMessage, GlobalState, Screen, ScreenType},
     components::{
+        focus_chain::FocusChain,
         notification::NotificationType,
         text_box::text_box::{TextBox, TextElement},
     },
-    constants::{MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH},
+    constants::MAX_PASSWORD_LENGTH,
     services::{
         self,
         reset_password::{reset_password, ResetPasswordInput, ResetPasswordResult},
@@ -36,11 +37,16 @@ pub enum ResetPasswordMessage {
     CodeResent { email: String },
 }
 
+const OTP_ID: &str = "Reset Password OTP";
+const NEW_PASSWORD_ID: &str = "Reset Password New Password";
+const CONFIRM_PASSWORD_ID: &str = "Reset Password Confirm Password";
+
 pub struct ResetPasswordScreen {
     otp_input: TextBox,
     new_password_input: TextBox,
     confirm_new_password_input: TextBox,
     error: String,
+    focus_chain: FocusChain,
 }
 impl ResetPasswordScreen {
     pub fn new() -> Self {
@@ -49,6 +55,7 @@ impl ResetPasswordScreen {
             new_password_input: TextBox::new("", MAX_PASSWORD_LENGTH),
             confirm_new_password_input: TextBox::new("", MAX_PASSWORD_LENGTH),
             error: "".to_owned(),
+            focus_chain: FocusChain::new(vec![OTP_ID, NEW_PASSWORD_ID, CONFIRM_PASSWORD_ID]),
         }
     }
 
@@ -150,14 +157,17 @@ impl Screen for ResetPasswordScreen {
         match message {
             AppMessage::ResetPasswordMessage(m) => match m {
                 ResetPasswordMessage::ChangeOtp(otp) => {
+                    self.focus_chain.set_focus(Some(OTP_ID));
                     self.otp_input.update(otp);
                     Task::none()
                 }
                 ResetPasswordMessage::ChangePassword(password) => {
+                    self.focus_chain.set_focus(Some(NEW_PASSWORD_ID));
                     self.new_password_input.update(password);
                     Task::none()
                 }
                 ResetPasswordMessage::ChangeConfirmPassword(confirm_password) => {
+                    self.focus_chain.set_focus(Some(CONFIRM_PASSWORD_ID));
                     self.confirm_new_password_input.update(confirm_password);
                     Task::none()
                 }
@@ -180,6 +190,14 @@ impl Screen for ResetPasswordScreen {
                 ))
                 .chain(Task::done(AppMessage::NavigateTo(ScreenType::Login))),
             },
+            AppMessage::SelectNext => {
+                self.focus_chain.set_next();
+                self.focus_chain.apply_focus()
+            }
+            AppMessage::SelectPrev => {
+                self.focus_chain.set_prev();
+                self.focus_chain.apply_focus()
+            }
             _ => Task::none(),
         }
     }
@@ -192,13 +210,21 @@ impl Screen for ResetPasswordScreen {
                 .align_x(Center)
                 .width(Fill),
             text_input("Code", self.otp_input.get_text())
+                .id(OTP_ID)
                 .on_input(|x| AppMessage::ResetPasswordMessage(ResetPasswordMessage::ChangeOtp(x)))
+                .on_submit(AppMessage::ResetPasswordMessage(
+                    ResetPasswordMessage::ResetPassword
+                ))
                 .align_x(Center)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
             text_input("Password", self.new_password_input.get_text())
+                .id(NEW_PASSWORD_ID)
                 .on_input(|x| AppMessage::ResetPasswordMessage(
                     ResetPasswordMessage::ChangePassword(x)
+                ))
+                .on_submit(AppMessage::ResetPasswordMessage(
+                    ResetPasswordMessage::ResetPassword
                 ))
                 .align_x(Center)
                 .secure(true)
@@ -208,8 +234,12 @@ impl Screen for ResetPasswordScreen {
                 "Confirm Password",
                 self.confirm_new_password_input.get_text()
             )
+            .id(CONFIRM_PASSWORD_ID)
             .on_input(|x| AppMessage::ResetPasswordMessage(
                 ResetPasswordMessage::ChangeConfirmPassword(x)
+            ))
+            .on_submit(AppMessage::ResetPasswordMessage(
+                ResetPasswordMessage::ResetPassword
             ))
             .align_x(Center)
             .secure(true)

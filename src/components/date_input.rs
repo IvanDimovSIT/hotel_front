@@ -2,9 +2,8 @@ use crate::app::AppMessage;
 use iced::advanced::graphics::core::Element;
 use iced::widget::button;
 use iced::{Renderer, Theme};
-use iced_aw::date_picker::{Date, Style};
+use iced_aw::date_picker::Date;
 use iced_aw::helpers::date_picker;
-use iced_aw::style::Status;
 
 pub struct DateInput {
     date: Date,
@@ -58,12 +57,11 @@ impl DateInput {
             self.on_cancel.clone(),
             on_submit,
         )
-        //.style(style)
         .font_size(14)
         .into()
     }
 
     pub fn get_date(&self) -> Date {
-        self.date.clone()
+        self.date
     }
 }

@@ -11,6 +11,7 @@ use uuid::Uuid;
 use crate::{
     app::{AppMessage, GlobalState, Screen, ScreenType},
     components::{
+        focus_chain::FocusChain,
         notification::NotificationType,
         text_box::text_box::{TextBox, TextElement},
     },
@@ -33,11 +34,16 @@ pub enum RegisterMessage {
     UpdateError(String),
 }
 
+const EMAIL_ID: &str = "Register Email";
+const PASSWORD_ID: &str = "Register Password";
+const PASSWORD_CONFIRM_ID: &str = "Register Password Confirm";
+
 pub struct RegisterScreen {
     email: TextBox,
     password: TextBox,
     confirm_password: TextBox,
     error: String,
+    focus_chain: FocusChain,
 }
 impl RegisterScreen {
     pub fn new() -> Self {
@@ -46,6 +52,7 @@ impl RegisterScreen {
             password: TextBox::new("", MAX_PASSWORD_LENGTH),
             confirm_password: TextBox::new("", MAX_PASSWORD_LENGTH),
             error: "".to_owned(),
+            focus_chain: FocusChain::new(vec![EMAIL_ID, PASSWORD_ID, PASSWORD_CONFIRM_ID]),
         }
     }
 
@@ -94,14 +101,17 @@ impl Screen for RegisterScreen {
         match message {
             AppMessage::RegisterMessage(register_message) => match register_message {
                 RegisterMessage::ChangeEmail(x) => {
+                    self.focus_chain.set_focus(Some(EMAIL_ID));
                     self.email.update(x);
                     Task::none()
                 }
                 RegisterMessage::ChangePassword(x) => {
+                    self.focus_chain.set_focus(Some(PASSWORD_ID));
                     self.password.update(x);
                     Task::none()
                 }
                 RegisterMessage::ChangeConfirmPassword(x) => {
+                    self.focus_chain.set_focus(Some(PASSWORD_CONFIRM_ID));
                     self.confirm_password.update(x);
                     Task::none()
                 }
@@ -117,6 +127,14 @@ impl Screen for RegisterScreen {
                     Task::none()
                 }
             },
+            AppMessage::SelectNext => {
+                self.focus_chain.set_next();
+                self.focus_chain.apply_focus()
+            }
+            AppMessage::SelectPrev => {
+                self.focus_chain.set_prev();
+                self.focus_chain.apply_focus()
+            }
             _ => Task::none(),
         }
     }
@@ -132,20 +150,26 @@ impl Screen for RegisterScreen {
                 .align_x(Center)
                 .width(Fill),
             text_input("Email", self.email.get_text())
+                .id(EMAIL_ID)
                 .on_input(|x| AppMessage::RegisterMessage(RegisterMessage::ChangeEmail(x)))
+                .on_submit(AppMessage::RegisterMessage(RegisterMessage::Register))
                 .align_x(Center)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
             text_input("Password", self.password.get_text())
+                .id(PASSWORD_ID)
                 .on_input(|x| AppMessage::RegisterMessage(RegisterMessage::ChangePassword(x)))
+                .on_submit(AppMessage::RegisterMessage(RegisterMessage::Register))
                 .align_x(Center)
                 .secure(true)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
             text_input("Confirm Password", self.confirm_password.get_text())
+                .id(PASSWORD_CONFIRM_ID)
                 .on_input(
                     |x| AppMessage::RegisterMessage(RegisterMessage::ChangeConfirmPassword(x))
                 )
+                .on_submit(AppMessage::RegisterMessage(RegisterMessage::Register))
                 .align_x(Center)
                 .secure(true)
                 .width(TEXT_BOX_WIDTH)

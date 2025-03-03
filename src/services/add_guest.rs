@@ -106,11 +106,7 @@ pub async fn add_guest(
 ) -> Result<AddGuestResult, String> {
     let token = {
         let guard = global_state.lock().unwrap();
-        if let Some(some) = &guard.token {
-            Some(some.token_string.clone())
-        } else {
-            None
-        }
+        guard.token.as_ref().map(|some| some.token_string.clone())
     };
 
     match add_guest_request(add_guest_input, token).await {

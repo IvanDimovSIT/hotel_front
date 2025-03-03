@@ -79,6 +79,7 @@ pub struct HotelApp {
 }
 impl HotelApp {
     fn navigate_to(&mut self, screen: &ScreenType) -> Task<AppMessage> {
+        println!("Navigating to: {screen:?}");
         self.screen_type = screen.clone();
         self.current_screen = screen.create_screen();
         Task::none()
@@ -159,6 +160,7 @@ impl HotelApp {
             },
         }]
         .push_maybe(self.notification.view())
+        .padding(10)
         .into()
     }
 

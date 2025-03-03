@@ -8,10 +8,12 @@ use std::sync::{Arc, Mutex};
 use crate::app::{AppMessage, GlobalState, Screen, ScreenType};
 use crate::styles::NAVIGATION_BUTTON_WIDTH;
 
-const PADDING_SIZE: f32 = 4.0;
-const BUTTON_SPACING: f32 = 5.0;
+const PADDING_SIZE: f32 = 5.0;
+const BUTTON_SPACING: f32 = 6.0;
 const BORDER_SIZE: f32 = 1.0;
-const BORDER_RADIUS: f32 = 2.0;
+const BORDER_RADIUS: f32 = 8.0;
+const SHADOW_OFFSET: Vector<f32> = Vector::new(5.0, 5.0);
+const SHADOW_BLUR_RADIUS: f32 = 10.0;
 
 pub fn view_admin(
     global_state: Arc<Mutex<GlobalState>>,
@@ -68,8 +70,8 @@ fn get_style(theme: &Theme) -> Style {
     Style {
         shadow: Shadow {
             color: Color::BLACK,
-            offset: Vector::new(2.0, 2.0),
-            blur_radius: 2.0,
+            offset: SHADOW_OFFSET,
+            blur_radius: SHADOW_BLUR_RADIUS,
         },
         border: Border {
             color: Color::BLACK,

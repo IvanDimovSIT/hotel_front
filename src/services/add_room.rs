@@ -91,11 +91,7 @@ pub async fn add_room(
     Validator::validate_price(add_room_input.price)?;
     let token = {
         let guard = global_state.lock().unwrap();
-        if let Some(some) = &guard.token {
-            Some(some.token_string.clone())
-        } else {
-            None
-        }
+        guard.token.as_ref().map(|some| some.token_string.clone())
     };
     let add_room_result = add_room_request(add_room_input, token).await;
 

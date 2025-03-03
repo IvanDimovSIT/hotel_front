@@ -30,7 +30,7 @@ impl NumberTextBox {
 }
 impl TextElement for NumberTextBox {
     fn get_text(&self) -> &str {
-        &self.text_box.get_text()
+        self.text_box.get_text()
     }
 
     fn update<T>(&mut self, new_text: T)

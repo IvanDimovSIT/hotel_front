@@ -1,9 +1,10 @@
 use std::time::Duration;
 
 use iced::{
+    border::Radius,
     widget::{container::Style, text, Container},
     Alignment::Center,
-    Background, Element,
+    Background, Border, Element,
     Length::Fill,
     Task, Theme,
 };
@@ -14,6 +15,7 @@ use crate::app::AppMessage;
 const NOTIFICATION_TIME: u64 = 4;
 const NOTIFICATION_TEXT_SIZE: f32 = 21.0;
 const NOTIFICAION_HEIGHT: f32 = 30.0;
+const NOTIFICATION_BORDER_RADIUS: f32 = 3.0;
 
 #[derive(Debug, Clone, Copy)]
 pub enum NotificationType {
@@ -47,7 +49,7 @@ impl Notification {
     }
 
     fn get_style(&self) -> impl Fn(&Theme) -> Style {
-        let notification_type = self.notification_type.clone();
+        let notification_type = self.notification_type;
         move |theme| {
             let palette = theme.palette();
             let background = Some(match notification_type {
@@ -59,6 +61,10 @@ impl Notification {
             Style {
                 text_color: Some(palette.background),
                 background,
+                border: Border {
+                    radius: Radius::new(NOTIFICATION_BORDER_RADIUS),
+                    ..Default::default()
+                },
                 ..Default::default()
             }
         }

@@ -15,6 +15,7 @@ use crate::{
     components::{
         checkbox::Checkbox,
         date_input::DateInput,
+        focus_chain::FocusChain,
         notification::NotificationType,
         text_box::{
             id_card_number_text_box::IdCardNumberTextBox,
@@ -52,6 +53,22 @@ pub enum AddGuestMessage {
     GuestAdded(Uuid),
 }
 
+const FIRST_NAME_ID: &str = "Register First Name";
+const LAST_NAME_ID: &str = "Register Last Name";
+const PHONE_NUMBER_ID: &str = "Register Phone Number";
+const ID_CARD_UCN_ID: &str = "Register ID Card UCN";
+const ID_CARD_NUMBER_ID: &str = "Register ID Card Number";
+const ID_CARD_ISSUE_AUTHORITY_ID: &str = "Register ID Card Issue Authority";
+const FOCUS_IDS_WITHOUT_CARD: [&str; 3] = [FIRST_NAME_ID, LAST_NAME_ID, PHONE_NUMBER_ID];
+const FOCUS_IDS_WITH_CARD: [&str; 6] = [
+    FIRST_NAME_ID,
+    LAST_NAME_ID,
+    PHONE_NUMBER_ID,
+    ID_CARD_UCN_ID,
+    ID_CARD_NUMBER_ID,
+    ID_CARD_ISSUE_AUTHORITY_ID,
+];
+
 pub struct AddGuestScreen {
     error: String,
     first_name_input: TextBox,
@@ -64,6 +81,7 @@ pub struct AddGuestScreen {
     id_card_issue_authority_input: TextBox,
     id_card_issue_date_input: DateInput,
     id_card_validity_input: DateInput,
+    focus_chain: FocusChain,
 }
 impl AddGuestScreen {
     pub fn new() -> Self {
@@ -91,6 +109,7 @@ impl AddGuestScreen {
                 Date::today(),
                 AppMessage::AddGuestMessage(AddGuestMessage::ToggleShowDateOfBirth),
             ),
+            focus_chain: FocusChain::new(FOCUS_IDS_WITHOUT_CARD.into()),
         }
     }
 
@@ -98,14 +117,18 @@ impl AddGuestScreen {
         if self.has_id_card_checkbox.is_checked() {
             column![
                 text_input("UCN", self.id_card_ucn_input.get_text())
+                    .id(ID_CARD_UCN_ID)
                     .on_input(|x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeUcn(x)))
+                    .on_submit(AppMessage::AddGuestMessage(AddGuestMessage::AddGuest))
                     .align_x(Center)
                     .width(TEXT_BOX_WIDTH)
                     .line_height(1.5),
                 text_input("Id Card Number", self.id_card_number_input.get_text())
+                    .id(ID_CARD_NUMBER_ID)
                     .on_input(
                         |x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeIdCardNumber(x))
                     )
+                    .on_submit(AppMessage::AddGuestMessage(AddGuestMessage::AddGuest))
                     .align_x(Center)
                     .width(TEXT_BOX_WIDTH)
                     .line_height(1.5),
@@ -113,9 +136,11 @@ impl AddGuestScreen {
                     "Id Card Issue Authority",
                     self.id_card_issue_authority_input.get_text()
                 )
+                .id(ID_CARD_ISSUE_AUTHORITY_ID)
                 .on_input(|x| AppMessage::AddGuestMessage(
                     AddGuestMessage::ChangeIdCardIssueAuthority(x)
                 ))
+                .on_submit(AppMessage::AddGuestMessage(AddGuestMessage::AddGuest))
                 .align_x(Center)
                 .width(TEXT_BOX_WIDTH)
                 .line_height(1.5),
@@ -282,30 +307,44 @@ impl Screen for AddGuestScreen {
         match message {
             AppMessage::AddGuestMessage(m) => match m {
                 AddGuestMessage::ChangeFirstName(x) => {
+                    self.focus_chain.set_focus(Some(FIRST_NAME_ID));
                     self.first_name_input.update(x);
                     Task::none()
                 }
                 AddGuestMessage::ChangeLastName(x) => {
+                    self.focus_chain.set_focus(Some(LAST_NAME_ID));
                     self.last_name_input.update(x);
                     Task::none()
                 }
                 AddGuestMessage::ChangeCheckbox(x) => {
+                    let selected = self.focus_chain.get_selected();
+                    self.focus_chain = if x {
+                        FocusChain::new(FOCUS_IDS_WITH_CARD.into())
+                    } else {
+                        FocusChain::new(FOCUS_IDS_WITHOUT_CARD.into())
+                    };
+                    self.focus_chain.set_focus(selected);
+
                     self.has_id_card_checkbox.update(x);
                     Task::none()
                 }
                 AddGuestMessage::ChangePhoneNumber(x) => {
+                    self.focus_chain.set_focus(Some(PHONE_NUMBER_ID));
                     self.phone_number_input.update(x);
                     Task::none()
                 }
                 AddGuestMessage::ChangeUcn(x) => {
+                    self.focus_chain.set_focus(Some(ID_CARD_UCN_ID));
                     self.id_card_ucn_input.update(x);
                     Task::none()
                 }
                 AddGuestMessage::ChangeIdCardNumber(x) => {
+                    self.focus_chain.set_focus(Some(ID_CARD_NUMBER_ID));
                     self.id_card_number_input.update(x);
                     Task::none()
                 }
                 AddGuestMessage::ChangeIdCardIssueAuthority(x) => {
+                    self.focus_chain.set_focus(Some(ID_CARD_ISSUE_AUTHORITY_ID));
                     self.id_card_issue_authority_input.update(x);
                     Task::none()
                 }
@@ -346,6 +385,14 @@ impl Screen for AddGuestScreen {
                     Task::done(show_notification("Guest added", NotificationType::Success))
                 }
             },
+            AppMessage::SelectNext => {
+                self.focus_chain.set_next();
+                self.focus_chain.apply_focus()
+            }
+            AppMessage::SelectPrev => {
+                self.focus_chain.set_prev();
+                self.focus_chain.apply_focus()
+            }
             _ => Task::none(),
         }
     }
@@ -358,21 +405,27 @@ impl Screen for AddGuestScreen {
                     .size(TITLE_FONT_SIZE)
                     .width(Fill),
                 text_input("First Name", self.first_name_input.get_text())
+                    .id(FIRST_NAME_ID)
                     .on_input(|x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeFirstName(x)))
+                    .on_submit(AppMessage::AddGuestMessage(AddGuestMessage::AddGuest))
                     .align_x(Center)
                     .width(TEXT_BOX_WIDTH)
                     .line_height(1.5),
                 text_input("Last Name", self.last_name_input.get_text())
+                    .id(LAST_NAME_ID)
                     .on_input(|x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeLastName(x)))
+                    .on_submit(AppMessage::AddGuestMessage(AddGuestMessage::AddGuest))
                     .align_x(Center)
                     .width(TEXT_BOX_WIDTH)
                     .line_height(1.5),
                 self.date_of_birth_input
                     .view(|x| AppMessage::AddGuestMessage(AddGuestMessage::ChangeDateOfBirth(x))),
                 text_input("Phone number (with +)", self.phone_number_input.get_text())
+                    .id(PHONE_NUMBER_ID)
                     .on_input(
                         |x| AppMessage::AddGuestMessage(AddGuestMessage::ChangePhoneNumber(x))
                     )
+                    .on_submit(AppMessage::AddGuestMessage(AddGuestMessage::AddGuest))
                     .align_x(Center)
                     .width(TEXT_BOX_WIDTH)
                     .line_height(1.5),

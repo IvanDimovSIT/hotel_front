@@ -1,12 +1,6 @@
-use std::{
-    error::Error,
-    sync::{Arc, Mutex},
-};
+use std::error::Error;
 
-use crate::{
-    app::GlobalState,
-    constants::{BASE_URL, LOGOUT_PATH},
-};
+use crate::constants::{BASE_URL, LOGOUT_PATH};
 
 async fn logout_request(token: Option<String>) -> Result<(), Box<dyn Error>> {
     let url = BASE_URL.to_owned() + LOGOUT_PATH;
