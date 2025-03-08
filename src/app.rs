@@ -8,6 +8,7 @@ use crate::components::notification::{Notification, NotificationMessage, Notific
 use crate::components::validator::Validator;
 use crate::screens::add_guest::{AddGuestMessage, AddGuestScreen};
 use crate::screens::add_room::{AddRoomMessage, AddRoomScreen};
+use crate::screens::book_room::{BookRoomMessage, BookRoomScreen};
 use crate::screens::home::HomeScreen;
 use crate::screens::login::{LoginMessage, LoginScreen};
 use crate::screens::register::{RegisterMessage, RegisterScreen};
@@ -47,6 +48,7 @@ pub enum AppMessage {
     AddGuestMessage(AddGuestMessage),
     RegisterMessage(RegisterMessage),
     ResetPasswordMessage(ResetPasswordMessage),
+    BookRoomMessage(BookRoomMessage),
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +59,7 @@ pub enum ScreenType {
     AddGuest,
     Register,
     ResetPassword,
+    BookRoom,
 }
 impl ScreenType {
     fn create_screen(&self) -> Box<dyn Screen> {
@@ -67,6 +70,7 @@ impl ScreenType {
             ScreenType::AddGuest => Box::new(AddGuestScreen::new()),
             ScreenType::Register => Box::new(RegisterScreen::new()),
             ScreenType::ResetPassword => Box::new(ResetPasswordScreen::new()),
+            ScreenType::BookRoom => Box::new(BookRoomScreen::new()),
         }
     }
 }

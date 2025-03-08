@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use app::HotelApp;
 use constants::DEFAULT_WINDOW_SIZE;
 use iced_aw::iced_fonts::REQUIRED_FONT_BYTES;
