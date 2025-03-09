@@ -19,7 +19,7 @@ impl ToString for BedSize {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Bed {
     pub bed_size: BedSize,

@@ -16,13 +16,18 @@ use crate::{
         date_input::DateInput,
         focus_chain::FocusChain,
         notification::NotificationType,
+        room_list_input::RoomListInput,
         text_box::{
             number_text_box::{NumberTextBox, NumberType},
             text_box::TextElement,
         },
     },
-    services::find_unoccupied_rooms::{
-        find_unoccupied_rooms, FindUnoccupiedRoomsInput, FindUnoccupiedRoomsResult,
+    model::room::Room,
+    services::{
+        find_unoccupied_rooms::{
+            find_unoccupied_rooms, FindUnoccupiedRoomsInput, FindUnoccupiedRoomsResult,
+        },
+        get_room::GetRoomResult,
     },
     styles::{ERROR_COLOR, FORM_PADDING, FORM_SPACING, TEXT_BOX_WIDTH, TITLE_FONT_SIZE},
     utils::show_notification,
@@ -56,6 +61,9 @@ pub enum BookRoomMessage {
     ToggleShowEndDate,
     FindFreeRooms,
     FoundFreeRooms(Vec<Uuid>),
+    RoomLoaded(Box<Room>),
+    ScrollRooms(f32),
+    SelectRoom(Uuid),
 }
 
 pub struct BookRoomScreen {
@@ -65,6 +73,7 @@ pub struct BookRoomScreen {
     maximum_capacity_input: NumberTextBox,
     start_date_input: DateInput,
     end_date_input: DateInput,
+    select_room_input: RoomListInput,
     error: String,
 }
 impl BookRoomScreen {
@@ -85,6 +94,7 @@ impl BookRoomScreen {
                 AppMessage::BookRoomMessage(BookRoomMessage::ToggleShowEndDate),
             ),
             focus_chain: BookRoomStep::DateAndRoom.get_focus_chain(),
+            select_room_input: RoomListInput::new(),
         }
     }
 
@@ -129,6 +139,12 @@ impl BookRoomScreen {
                 .size(18)
                 .align_x(Center)
                 .width(Fill),
+            self.select_room_input.view(
+                |id| AppMessage::BookRoomMessage(BookRoomMessage::SelectRoom(id)),
+                |x| AppMessage::BookRoomMessage(BookRoomMessage::ScrollRooms(
+                    x.relative_offset().y
+                ))
+            ),
             button("Next")
                 .on_press(AppMessage::BookRoomMessage(BookRoomMessage::SetStep(
                     BookRoomStep::DateAndRoom
@@ -174,6 +190,22 @@ impl BookRoomScreen {
                 }
             },
         )
+    }
+
+    fn map_get_room_result(result: Result<GetRoomResult, String>) -> AppMessage {
+        match result {
+            Ok(GetRoomResult::Found(room)) => {
+                AppMessage::BookRoomMessage(BookRoomMessage::RoomLoaded(Box::new(room)))
+            }
+            Ok(GetRoomResult::Forbidden) => AppMessage::TokenExpired,
+            Ok(GetRoomResult::BadRequest(err)) => {
+                AppMessage::BookRoomMessage(BookRoomMessage::SetError(err))
+            }
+            Err(err) => {
+                println!("Error fetching rooms: {err}");
+                show_notification("Unexpected_message", NotificationType::Error)
+            }
+        }
     }
 }
 impl Screen for BookRoomScreen {
@@ -223,7 +255,20 @@ impl Screen for BookRoomScreen {
                 BookRoomMessage::FindFreeRooms => self.find_free_rooms(global_state),
                 BookRoomMessage::FoundFreeRooms(ids) => {
                     self.error = "".to_owned();
-                    println!("TODO: set ids: '{ids:?}'");
+                    self.select_room_input
+                        .update_ids(global_state, ids, Self::map_get_room_result)
+                }
+                BookRoomMessage::RoomLoaded(room) => {
+                    self.select_room_input.update_loaded(*room);
+                    Task::none()
+                }
+                BookRoomMessage::ScrollRooms(amount) => self.select_room_input.load_scrolled(
+                    global_state,
+                    amount,
+                    Self::map_get_room_result,
+                ),
+                BookRoomMessage::SelectRoom(uuid) => {
+                    self.select_room_input.set_selected(Some(uuid));
                     Task::none()
                 }
             },

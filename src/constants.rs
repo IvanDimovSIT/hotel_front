@@ -15,3 +15,4 @@ pub const REGISTER_PATH: &str = "auth/register";
 pub const SEND_OTP_PATH: &str = "auth/send-otp";
 pub const RESET_PASSWORD_PATH: &str = "auth/reset-password";
 pub const FIND_UNOCCUPIED_ROOMS_PATH: &str = "booking/unoccupied";
+pub const GET_ROOM_PATH: &str = "room/";

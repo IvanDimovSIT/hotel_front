@@ -4,5 +4,6 @@ pub mod date_input;
 pub mod focus_chain;
 pub mod navigation_bar;
 pub mod notification;
+pub mod room_list_input;
 pub mod text_box;
 pub mod validator;
