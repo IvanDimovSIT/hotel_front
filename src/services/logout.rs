@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use reqwest::header;
+
 use crate::constants::{BASE_URL, LOGOUT_PATH};
 
 async fn logout_request(token: Option<String>) -> Result<(), Box<dyn Error>> {
@@ -8,11 +10,8 @@ async fn logout_request(token: Option<String>) -> Result<(), Box<dyn Error>> {
     println!("POST {url}");
     let result = client
         .post(url)
-        .header("Content-Type", "application/json")
-        .header(
-            "Authorization",
-            format!("Bearer {}", token.unwrap_or_default()),
-        )
+        .header(header::CONTENT_TYPE, "application/json")
+        .bearer_auth(token.unwrap_or_default())
         .send()
         .await?;
 

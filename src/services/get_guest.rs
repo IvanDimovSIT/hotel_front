@@ -1,29 +1,25 @@
-use std::{
-    error::Error,
-    sync::{Arc, Mutex},
-};
+use std::error::Error;
 
 use reqwest::{header, StatusCode};
 use uuid::Uuid;
 
 use crate::{
-    app::GlobalState,
-    constants::{BASE_URL, GET_ROOM_PATH},
-    model::room::Room,
+    constants::{BASE_URL, GET_GUEST_PATH},
+    model::guest::{Guest, GuestDto},
     utils::decode_error_response,
 };
 
-pub enum GetRoomResult {
-    Found(Room),
+pub enum GetGuestResult {
+    Found(Box<Guest>),
     BadRequest(String),
     Forbidden,
 }
 
-async fn get_room_request(
+async fn get_guest_request(
     token: &str,
     id: Uuid,
-) -> Result<GetRoomResult, Box<dyn Error + Send + Sync>> {
-    let url = BASE_URL.to_owned() + GET_ROOM_PATH + &id.to_string();
+) -> Result<GetGuestResult, Box<dyn Error + Send + Sync>> {
+    let url = BASE_URL.to_owned() + GET_GUEST_PATH + &id.to_string();
     let client = reqwest::Client::new();
 
     println!("GET {url}");
@@ -36,19 +32,20 @@ async fn get_room_request(
 
     let status = response.status();
     if status.is_success() {
-        let room: Room = response.json().await?;
-        Ok(GetRoomResult::Found(room))
+        let guest_dto: GuestDto = response.json().await?;
+        let guest = Box::new(guest_dto.convert_with_id(id));
+        Ok(GetGuestResult::Found(guest))
     } else if status == StatusCode::FORBIDDEN || status == StatusCode::UNAUTHORIZED {
-        Ok(GetRoomResult::Forbidden)
+        Ok(GetGuestResult::Forbidden)
     } else {
-        Ok(GetRoomResult::BadRequest(
+        Ok(GetGuestResult::BadRequest(
             decode_error_response(response).await,
         ))
     }
 }
 
-pub async fn get_room(token_string: String, id: Uuid) -> Result<GetRoomResult, String> {
-    match get_room_request(&token_string, id).await {
+pub async fn get_guest(token: String, guest_id: Uuid) -> Result<GetGuestResult, String> {
+    match get_guest_request(&token, guest_id).await {
         Ok(ok) => Ok(ok),
         Err(err) => Err(err.to_string()),
     }

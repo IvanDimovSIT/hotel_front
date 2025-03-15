@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use reqwest::header;
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 
@@ -37,7 +38,7 @@ async fn login_request(
     println!("POST {url}");
     let result = client
         .post(url)
-        .header("Content-Type", "application/json")
+        .header(header::CONTENT_TYPE, "application/json")
         .body(to_string(&input)?)
         .send()
         .await?;

@@ -4,7 +4,7 @@ use std::{
 };
 
 use iced_aw::date_picker::Date;
-use reqwest::StatusCode;
+use reqwest::{header, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 use uuid::Uuid;
@@ -77,8 +77,8 @@ async fn add_guest_request(
     println!("Input:{input:?}");
     let result = client
         .post(url)
-        .header("Content-Type", "application/json")
-        .header("Authorization", format!("Bearer {}", token_string))
+        .header(header::CONTENT_TYPE, "application/json")
+        .bearer_auth(token_string)
         .body(to_string(&input)?)
         .send()
         .await?;

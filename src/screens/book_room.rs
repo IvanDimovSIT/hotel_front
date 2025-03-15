@@ -15,14 +15,16 @@ use crate::{
     components::{
         date_input::DateInput,
         focus_chain::FocusChain,
+        list_input::{guest_list_input::GuestListInput, room_list_input::RoomListInput},
         notification::NotificationType,
-        room_list_input::RoomListInput,
         text_box::{
             number_text_box::{NumberTextBox, NumberType},
-            text_box::TextElement,
+            phone_number_text_box::PhoneNumberTextBox,
+            text_box::{TextBox, TextElement},
+            ucn_text_box::UcnTextBox,
         },
     },
-    model::room::Room,
+    model::{guest::Guest, room::Room},
     services::{
         find_unoccupied_rooms::{
             find_unoccupied_rooms, FindUnoccupiedRoomsInput, FindUnoccupiedRoomsResult,
@@ -36,11 +38,13 @@ use crate::{
 #[derive(Debug, Clone, Copy)]
 enum BookRoomStep {
     DateAndRoom,
+    AddGuests,
 }
 impl BookRoomStep {
     fn get_focus_chain(self) -> FocusChain {
         match self {
             BookRoomStep::DateAndRoom => FocusChain::new(DATE_AND_ROOM_IDS.into()),
+            BookRoomStep::AddGuests => FocusChain::new(ADD_GUESTS_IDS.into()),
         }
     }
 }
@@ -48,6 +52,12 @@ impl BookRoomStep {
 const MIN_CAPACITY_ID: &str = "Book Room Min Capacity";
 const MAX_CAPACITY_ID: &str = "Book Room Min Capacity";
 const DATE_AND_ROOM_IDS: [&str; 2] = [MIN_CAPACITY_ID, MAX_CAPACITY_ID];
+
+const FIEST_NAME_ID: &str = "Book Room First Name";
+const LAST_NAME_ID: &str = "Book Room Last Name";
+const PHONE_NUMBER_ID: &str = "Book Room Phone";
+const UCN_ID: &str = "Book Room UCN";
+const ADD_GUESTS_IDS: [&str; 4] = [FIEST_NAME_ID, LAST_NAME_ID, UCN_ID, PHONE_NUMBER_ID];
 
 #[derive(Debug, Clone)]
 pub enum BookRoomMessage {
@@ -64,6 +74,13 @@ pub enum BookRoomMessage {
     RoomLoaded(Box<Room>),
     ScrollRooms(f32),
     SelectRoom(Uuid),
+    ChangeFirstName(String),
+    ChangeLastName(String),
+    ChangeUCN(String),
+    ChangeDateOfBirth(Date),
+    ToggleShowDateOfBirth,
+    ChangePhoneNumber(String),
+    FindGuests,
 }
 
 pub struct BookRoomScreen {
@@ -74,6 +91,13 @@ pub struct BookRoomScreen {
     start_date_input: DateInput,
     end_date_input: DateInput,
     select_room_input: RoomListInput,
+    select_guest_input: GuestListInput,
+    selected_guests: Vec<Guest>,
+    first_name_input: TextBox,
+    last_name_input: TextBox,
+    ucn_input: UcnTextBox,
+    phone_number_input: PhoneNumberTextBox,
+    date_of_birth_input: DateInput,
     error: String,
 }
 impl BookRoomScreen {
@@ -95,6 +119,17 @@ impl BookRoomScreen {
             ),
             focus_chain: BookRoomStep::DateAndRoom.get_focus_chain(),
             select_room_input: RoomListInput::new(),
+            select_guest_input: GuestListInput::new(),
+            selected_guests: vec![],
+            first_name_input: TextBox::new("", 20),
+            last_name_input: TextBox::new("", 20),
+            ucn_input: UcnTextBox::new(""),
+            phone_number_input: PhoneNumberTextBox::new(""),
+            date_of_birth_input: DateInput::new(
+                "Date of birth",
+                Date::today(),
+                AppMessage::BookRoomMessage(BookRoomMessage::ToggleShowDateOfBirth),
+            ),
         }
     }
 
@@ -146,6 +181,74 @@ impl BookRoomScreen {
                 ))
             ),
             button("Next")
+                .on_press(AppMessage::BookRoomMessage(BookRoomMessage::SetStep(
+                    BookRoomStep::AddGuests
+                )))
+                .height(30)
+                .width(80)
+        ]
+        .spacing(FORM_SPACING)
+        .align_x(Center)
+        .padding(FORM_PADDING)
+        .into()
+    }
+
+    fn view_add_guests(&self) -> Element<AppMessage> {
+        column![
+            text!("Add guests")
+                .align_x(Center)
+                .size(TITLE_FONT_SIZE)
+                .width(Fill),
+            row![
+                text_input("First name", self.first_name_input.get_text())
+                    .id(FIEST_NAME_ID)
+                    .on_input(|x| AppMessage::BookRoomMessage(BookRoomMessage::ChangeFirstName(x)))
+                    .align_x(Center)
+                    .width(150)
+                    .line_height(1.5),
+                text_input("Last name", self.last_name_input.get_text())
+                    .id(LAST_NAME_ID)
+                    .on_input(|x| AppMessage::BookRoomMessage(BookRoomMessage::ChangeLastName(x)))
+                    .align_x(Center)
+                    .width(150)
+                    .line_height(1.5)
+            ]
+            .spacing(10),
+            row![
+                text_input("UCN", self.ucn_input.get_text())
+                    .id(UCN_ID)
+                    .on_input(|x| AppMessage::BookRoomMessage(BookRoomMessage::ChangeUCN(x)))
+                    .align_x(Center)
+                    .width(150)
+                    .line_height(1.5),
+                text_input("Phone number", self.phone_number_input.get_text())
+                    .id(PHONE_NUMBER_ID)
+                    .on_input(
+                        |x| AppMessage::BookRoomMessage(BookRoomMessage::ChangePhoneNumber(x))
+                    )
+                    .align_x(Center)
+                    .width(150)
+                    .line_height(1.5),
+            ]
+            .spacing(10),
+            self.date_of_birth_input
+                .view(|x| AppMessage::BookRoomMessage(BookRoomMessage::ChangeDateOfBirth(x))),
+            button("Find")
+                .on_press(AppMessage::BookRoomMessage(BookRoomMessage::FindGuests))
+                .height(30)
+                .width(80),
+            text!("{}", self.error)
+                .color(ERROR_COLOR)
+                .size(18)
+                .align_x(Center)
+                .width(Fill),
+            self.select_room_input.view(
+                |id| AppMessage::BookRoomMessage(BookRoomMessage::SelectRoom(id)),
+                |x| AppMessage::BookRoomMessage(BookRoomMessage::ScrollRooms(
+                    x.relative_offset().y
+                ))
+            ),
+            button("Previous")
                 .on_press(AppMessage::BookRoomMessage(BookRoomMessage::SetStep(
                     BookRoomStep::DateAndRoom
                 )))
@@ -222,6 +325,7 @@ impl Screen for BookRoomScreen {
                 }
                 BookRoomMessage::SetStep(book_room_step) => {
                     self.current_step = book_room_step;
+                    self.focus_chain = book_room_step.get_focus_chain();
                     Task::none()
                 }
                 BookRoomMessage::ChangeMinimumCapacity(min_capacity) => {
@@ -271,6 +375,36 @@ impl Screen for BookRoomScreen {
                     self.select_room_input.set_selected(Some(uuid));
                     Task::none()
                 }
+                BookRoomMessage::ChangeFirstName(first_name) => {
+                    self.focus_chain.set_focus(Some(FIEST_NAME_ID));
+                    self.first_name_input.update(first_name);
+                    Task::none()
+                }
+                BookRoomMessage::ChangeLastName(last_name) => {
+                    self.focus_chain.set_focus(Some(LAST_NAME_ID));
+                    self.last_name_input.update(last_name);
+                    Task::none()
+                }
+                BookRoomMessage::ChangeUCN(ucn) => {
+                    self.focus_chain.set_focus(Some(UCN_ID));
+                    self.ucn_input.update(ucn);
+                    Task::none()
+                }
+                BookRoomMessage::ChangeDateOfBirth(date) => {
+                    self.date_of_birth_input.toggle_show();
+                    self.date_of_birth_input.update_date(date);
+                    Task::none()
+                }
+                BookRoomMessage::ToggleShowDateOfBirth => {
+                    self.date_of_birth_input.toggle_show();
+                    Task::none()
+                }
+                BookRoomMessage::ChangePhoneNumber(phone_number) => {
+                    self.focus_chain.set_focus(Some(PHONE_NUMBER_ID));
+                    self.phone_number_input.update(phone_number);
+                    Task::none()
+                }
+                BookRoomMessage::FindGuests => todo!(),
             },
             AppMessage::SelectNext => {
                 self.focus_chain.set_next();
@@ -287,6 +421,7 @@ impl Screen for BookRoomScreen {
     fn view(&self, _global_state: Arc<Mutex<GlobalState>>) -> Element<AppMessage> {
         let current_view = match self.current_step {
             BookRoomStep::DateAndRoom => self.view_date_and_room(),
+            BookRoomStep::AddGuests => self.view_add_guests(),
         };
 
         scrollable(current_view).into()

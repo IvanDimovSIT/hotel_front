@@ -1,3 +1,4 @@
+use iced_aw::date_picker::Date;
 use reqwest::Response;
 use serde::Deserialize;
 
@@ -37,4 +38,25 @@ where
         message: message.into(),
         notification_type,
     })
+}
+
+pub fn string_to_date(date_string: &str) -> Date {
+    const DATE_COMPONENTS: usize = 3;
+    const YEAR_INDEX: usize = 0;
+    const MONTH_INDEX: usize = 1;
+    const DAY_INDEX: usize = 2;
+    let parts: Vec<_> = date_string.split("-").collect();
+
+    if parts.len() != DATE_COMPONENTS {
+        println!("Invalid date: '{date_string}'");
+        return Date::default();
+    }
+
+    let year = parts[YEAR_INDEX].parse().unwrap_or_default();
+
+    let month = parts[MONTH_INDEX].parse().unwrap_or_default();
+
+    let day = parts[DAY_INDEX].parse().unwrap_or_default();
+
+    Date::from_ymd(year, month, day)
 }

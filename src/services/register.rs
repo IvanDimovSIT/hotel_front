@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use reqwest::Response;
+use reqwest::{header, Response};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 use uuid::Uuid;
@@ -62,7 +62,7 @@ pub async fn register(register_input: RegisterInput) -> Result<RegisterResult, S
     let result = client
         .post(url)
         .body(body)
-        .header("Content-Type", "application/json")
+        .header(header::CONTENT_TYPE, "application/json")
         .send()
         .await;
 

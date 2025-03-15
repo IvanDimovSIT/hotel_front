@@ -4,7 +4,7 @@ use std::{
 };
 
 use iced_aw::date_picker::Date;
-use reqwest::{Response, StatusCode};
+use reqwest::{header, Response, StatusCode};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -79,8 +79,8 @@ async fn find_unoccupied_rooms_request(
     let result = client
         .get(url)
         .query(&query_params)
-        .header("Content-Type", "application/json")
-        .header("Authorization", format!("Bearer {}", token))
+        .header(header::CONTENT_TYPE, "application/json")
+        .bearer_auth(token)
         .send()
         .await?;
 

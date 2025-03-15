@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use reqwest::StatusCode;
+use reqwest::{header, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 use uuid::Uuid;
@@ -54,8 +54,8 @@ async fn add_room_request(
     println!("POST {url}");
     let result = client
         .post(url)
-        .header("Content-Type", "application/json")
-        .header("Authorization", format!("Bearer {}", token_string))
+        .header(header::CONTENT_TYPE, "application/json")
+        .bearer_auth(token_string)
         .body(to_string(&input)?)
         .send()
         .await?;

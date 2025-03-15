@@ -1,3 +1,4 @@
+use reqwest::header;
 use serde::Deserialize;
 
 use crate::{
@@ -17,8 +18,8 @@ pub async fn refresh_token(token: String) -> Result<JwtToken, String> {
     println!("GET {url}");
     let result = client
         .get(url)
-        .header("Content-Type", "application/json")
-        .header("Authorization", format!("Bearer {}", token))
+        .header(header::CONTENT_TYPE, "application/json")
+        .bearer_auth(token)
         .send()
         .await;
 

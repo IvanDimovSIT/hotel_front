@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use ::serde::Serialize;
-use reqwest::Response;
+use reqwest::{header, Response};
 use serde_json::to_string;
 
 use crate::{
@@ -52,7 +52,7 @@ pub async fn reset_password(input: ResetPasswordInput) -> Result<ResetPasswordRe
     let result = client
         .post(url)
         .body(body)
-        .header("Content-Type", "application/json")
+        .header(header::CONTENT_TYPE, "application/json")
         .send()
         .await;
 
