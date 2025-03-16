@@ -58,12 +58,24 @@ impl GuestListInput {
                 .into();
         };
 
-        let col = column![
-            row![text!("Guest placeholder")],
-            button("Add").on_press(on_selected(guest.id))
-        ];
+        let mut col = column![row![text!(
+            "{} {}, {}",
+            guest.first_name,
+            guest.last_name,
+            guest.date_of_birth
+        )],];
+        let mut optional_row = row![];
+        if let Some(id_card) = &guest.id_card {
+            optional_row = optional_row.push(text!("UCN: {}", id_card.ucn))
+        }
+        if let Some(phone) = &guest.phone_number {
+            optional_row = optional_row.push(text!("Phone: {phone}"))
+        }
 
-        iced::widget::container(col)
+        col = col.push(optional_row.spacing(10));
+        col = col.push(button("Add").on_press(on_selected(guest.id)));
+
+        iced::widget::container(col.spacing(5))
             .width(WIDTH)
             .height(HEIGHT)
             .style(Self::get_guest_container_style)
@@ -197,5 +209,9 @@ impl GuestListInput {
             .collect();
 
         Task::batch(tasks)
+    }
+
+    pub fn get_loaded(&self, id: Uuid) -> Option<Guest> {
+        self.loaded.get(&id).map(|guest| guest.clone())
     }
 }

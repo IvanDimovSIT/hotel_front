@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use iced::{
-    widget::{button, column, row, scrollable, text, text_input},
+    widget::{button, column, container, row, scrollable, text, text_input},
     Alignment::Center,
     Element,
     Length::Fill,
@@ -13,6 +13,7 @@ use uuid::Uuid;
 use crate::{
     app::{AppMessage, GlobalState, Screen},
     components::{
+        checkbox::Checkbox,
         date_input::DateInput,
         focus_chain::FocusChain,
         list_input::{guest_list_input::GuestListInput, room_list_input::RoomListInput},
@@ -26,9 +27,11 @@ use crate::{
     },
     model::{guest::Guest, room::Room},
     services::{
+        find_guest::{find_guest, FindGuestInput, FindGuestResult},
         find_unoccupied_rooms::{
             find_unoccupied_rooms, FindUnoccupiedRoomsInput, FindUnoccupiedRoomsResult,
         },
+        get_guest::GetGuestResult,
         get_room::GetRoomResult,
     },
     styles::{ERROR_COLOR, FORM_PADDING, FORM_SPACING, TEXT_BOX_WIDTH, TITLE_FONT_SIZE},
@@ -78,9 +81,16 @@ pub enum BookRoomMessage {
     ChangeLastName(String),
     ChangeUCN(String),
     ChangeDateOfBirth(Date),
+    ChangeSearchByDateOfBirth(bool),
     ToggleShowDateOfBirth,
     ChangePhoneNumber(String),
     FindGuests,
+    FoundGuests(Vec<Uuid>),
+    GuestLoaded(Box<Guest>),
+    ScrollGuests(f32),
+    AddGuest(Uuid),
+    SetSelectedMainGuest(Uuid),
+    RemoveAddedGuest(Uuid),
 }
 
 pub struct BookRoomScreen {
@@ -93,11 +103,13 @@ pub struct BookRoomScreen {
     select_room_input: RoomListInput,
     select_guest_input: GuestListInput,
     selected_guests: Vec<Guest>,
+    main_guest_id: Option<Uuid>,
     first_name_input: TextBox,
     last_name_input: TextBox,
     ucn_input: UcnTextBox,
     phone_number_input: PhoneNumberTextBox,
     date_of_birth_input: DateInput,
+    search_by_date_of_birth_checkbox: Checkbox,
     error: String,
 }
 impl BookRoomScreen {
@@ -130,6 +142,8 @@ impl BookRoomScreen {
                 Date::today(),
                 AppMessage::BookRoomMessage(BookRoomMessage::ToggleShowDateOfBirth),
             ),
+            search_by_date_of_birth_checkbox: Checkbox::new("Search by date of birth", false),
+            main_guest_id: None,
         }
     }
 
@@ -231,6 +245,10 @@ impl BookRoomScreen {
                     .line_height(1.5),
             ]
             .spacing(10),
+            self.search_by_date_of_birth_checkbox
+                .view(
+                    |x| AppMessage::BookRoomMessage(BookRoomMessage::ChangeSearchByDateOfBirth(x))
+                ),
             self.date_of_birth_input
                 .view(|x| AppMessage::BookRoomMessage(BookRoomMessage::ChangeDateOfBirth(x))),
             button("Find")
@@ -242,12 +260,13 @@ impl BookRoomScreen {
                 .size(18)
                 .align_x(Center)
                 .width(Fill),
-            self.select_room_input.view(
-                |id| AppMessage::BookRoomMessage(BookRoomMessage::SelectRoom(id)),
-                |x| AppMessage::BookRoomMessage(BookRoomMessage::ScrollRooms(
+            self.select_guest_input.view(
+                |id| AppMessage::BookRoomMessage(BookRoomMessage::AddGuest(id)),
+                |x| AppMessage::BookRoomMessage(BookRoomMessage::ScrollGuests(
                     x.relative_offset().y
                 ))
             ),
+            self.view_added_guests_list(),
             button("Previous")
                 .on_press(AppMessage::BookRoomMessage(BookRoomMessage::SetStep(
                     BookRoomStep::DateAndRoom
@@ -309,6 +328,122 @@ impl BookRoomScreen {
                 show_notification("Unexpected_message", NotificationType::Error)
             }
         }
+    }
+
+    fn map_get_guest_result(result: Result<GetGuestResult, String>) -> AppMessage {
+        match result {
+            Ok(GetGuestResult::Found(guest)) => {
+                AppMessage::BookRoomMessage(BookRoomMessage::GuestLoaded(guest))
+            }
+            Ok(GetGuestResult::Forbidden) => AppMessage::TokenExpired,
+            Ok(GetGuestResult::BadRequest(err)) => {
+                AppMessage::BookRoomMessage(BookRoomMessage::SetError(err))
+            }
+            Err(err) => {
+                println!("Error fetching guest: {err}");
+                show_notification("Unexpected_message", NotificationType::Error)
+            }
+        }
+    }
+
+    fn get_text_if_not_empty(input: &impl TextElement) -> Option<String> {
+        if input.get_text().is_empty() {
+            None
+        } else {
+            Some(input.get_text().to_owned())
+        }
+    }
+
+    fn get_find_guests_input(&self) -> FindGuestInput {
+        let first_name = Self::get_text_if_not_empty(&self.first_name_input);
+        let last_name = Self::get_text_if_not_empty(&self.last_name_input);
+        let phone_number = Self::get_text_if_not_empty(&self.phone_number_input);
+        let ucn = Self::get_text_if_not_empty(&self.ucn_input);
+        let date_of_birth = if self.search_by_date_of_birth_checkbox.is_checked() {
+            Some(self.date_of_birth_input.get_date().to_string())
+        } else {
+            None
+        };
+
+        FindGuestInput {
+            first_name,
+            last_name,
+            date_of_birth,
+            ucn,
+            phone_number,
+        }
+    }
+
+    fn find_guests(&mut self, global_state: Arc<Mutex<GlobalState>>) -> Task<AppMessage> {
+        self.error = "".to_owned();
+        let input = self.get_find_guests_input();
+
+        Task::perform(find_guest(global_state, input), |res| match res {
+            Ok(FindGuestResult::Found(ids)) => {
+                println!("Found guests count: {}", ids.len());
+                AppMessage::BookRoomMessage(BookRoomMessage::FoundGuests(ids))
+            }
+            Ok(FindGuestResult::Forbidden) => AppMessage::TokenExpired,
+            Ok(FindGuestResult::BadRequest(err)) => {
+                AppMessage::BookRoomMessage(BookRoomMessage::SetError(err))
+            }
+            Err(err) => {
+                println!("Error finding guests: {err}");
+                show_notification("Unexpected error", NotificationType::Error)
+            }
+        })
+    }
+
+    fn add_guest_to_booking(&mut self, guest_id: Uuid) -> Task<AppMessage> {
+        let is_added = self
+            .selected_guests
+            .iter()
+            .find(|guest| guest.id == guest_id);
+
+        if is_added.is_none() {
+            self.select_guest_input
+                .get_loaded(guest_id)
+                .map(|guest| self.selected_guests.push(guest));
+        }
+
+        Task::none()
+    }
+
+    fn view_added_guest(&self, guest: &Guest) -> Element<AppMessage> {
+        let select_main_guest_button = if self.main_guest_id == Some(guest.id) {
+            button("Selected").width(80)
+        } else {
+            button("Select")
+                .on_press(AppMessage::BookRoomMessage(
+                    BookRoomMessage::SetSelectedMainGuest(guest.id),
+                ))
+                .width(80)
+        };
+
+        row![
+            text!("{} {}", guest.first_name, guest.last_name).width(220),
+            button("Remove")
+                .on_press(AppMessage::BookRoomMessage(
+                    BookRoomMessage::RemoveAddedGuest(guest.id)
+                ))
+                .width(80),
+            select_main_guest_button
+        ]
+        .spacing(10)
+        .into()
+    }
+
+    fn view_added_guests_list(&self) -> Element<AppMessage> {
+        let mut added_guests_list = column![];
+        if !self.selected_guests.is_empty() {
+            added_guests_list = added_guests_list.push(text!("Selected Guests:").center());
+        }
+
+        for guest in &self.selected_guests {
+            added_guests_list = added_guests_list.push(self.view_added_guest(guest));
+        }
+
+        container(added_guests_list.spacing(5)).width(480).into()
     }
 }
 impl Screen for BookRoomScreen {
@@ -404,7 +539,36 @@ impl Screen for BookRoomScreen {
                     self.phone_number_input.update(phone_number);
                     Task::none()
                 }
-                BookRoomMessage::FindGuests => todo!(),
+                BookRoomMessage::FindGuests => self.find_guests(global_state),
+                BookRoomMessage::ChangeSearchByDateOfBirth(should_search) => {
+                    self.search_by_date_of_birth_checkbox.update(should_search);
+                    Task::none()
+                }
+                BookRoomMessage::FoundGuests(uuids) => self.select_guest_input.update_ids(
+                    global_state,
+                    uuids,
+                    Self::map_get_guest_result,
+                ),
+                BookRoomMessage::GuestLoaded(guest) => {
+                    self.select_guest_input.update_loaded(*guest);
+                    Task::none()
+                }
+                BookRoomMessage::ScrollGuests(scroll_amount) => self
+                    .select_guest_input
+                    .load_scrolled(global_state, scroll_amount, Self::map_get_guest_result),
+                BookRoomMessage::AddGuest(uuid) => self.add_guest_to_booking(uuid),
+                BookRoomMessage::SetSelectedMainGuest(uuid) => {
+                    self.main_guest_id = Some(uuid);
+                    Task::none()
+                }
+                BookRoomMessage::RemoveAddedGuest(uuid) => {
+                    if self.main_guest_id == Some(uuid) {
+                        self.main_guest_id = None;
+                    }
+                    self.selected_guests.retain(|guest| guest.id != uuid);
+
+                    Task::none()
+                }
             },
             AppMessage::SelectNext => {
                 self.focus_chain.set_next();
